@@ -1,3 +1,5 @@
+package com.cwfitz.the_station_bot
+
 object Main {
 	def main(args: Array[String]): Unit = {
 		val apiKey = sys.env.get("API_KEY") match {

@@ -1,5 +1,7 @@
-import sx.blah.discord.api.{ClientBuilder, IDiscordClient}
+package com.cwfitz.the_station_bot
+
 import sx.blah.discord.api.events.EventSubscriber
+import sx.blah.discord.api.{ClientBuilder, IDiscordClient}
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent
 import sx.blah.discord.util.RequestBuffer
 
