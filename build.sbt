@@ -8,5 +8,7 @@ lazy val the_station_bot = Project("the-station-bot", file("."))
 	    libraryDependencies ++= Seq(
 		    "com.discord4j" % "Discord4J" % "2.10.1",
 	        "ch.qos.logback" % "logback-classic" % "1.2.3"
-	    )
+	    ),
+	    assemblyJarName in assembly := "the-station-bot.jar",
+	    mainClass in assembly := Some("com.cwfitz.the_station_bot.Main")
     ))
