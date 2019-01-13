@@ -9,8 +9,14 @@ object Main {
 				throw new IllegalArgumentException("Cannot find API_KEY")
 		}
 
-		val client = Client(apiKey)
+		val client = Client(apiKey, "!")
 
-
+		client.addCommand("help", commands.help)
+		client.addCommand("add", commands.roles.add)
+		client.addCommand("set", commands.roles.add)
+		client.addCommand("rem", commands.roles.remove)
+		client.addCommand("remove", commands.roles.remove)
+		client.addCommand("delays", commands.delays)
+		client.addCommand("l", commands.random)
 	}
 }
