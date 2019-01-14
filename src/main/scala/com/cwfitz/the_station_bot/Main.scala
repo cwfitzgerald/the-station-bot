@@ -6,7 +6,7 @@ object Main {
 			case Some(v) => v
 			case None =>
 				println("Cannot find API_KEY.")
-				throw new IllegalArgumentException("Cannot find API_KEY")
+				sys.exit(1)
 		}
 
 		val client = Client(apiKey, "!")
