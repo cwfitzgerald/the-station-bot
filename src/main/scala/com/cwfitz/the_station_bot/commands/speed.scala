@@ -27,7 +27,7 @@ object speed extends Command {
 		}
 	private def from[_: P]: P[Double] = P(IgnoreCase("from").? ~/ num ~ StringInIgnoreCase("s", "sec", "second", "seconds").? )
 	private def to[_: P]: P[Double] = P(IgnoreCase("to").? ~/ num ~ StringInIgnoreCase("s", "sec", "second", "seconds").? )
-	private def carType[_: P]: P[Double] = P( IgnoreCase("R") ~ CharIn("0-9").rep(min = 1, max = 3).! ~ CharIn("AB").? )
+	private def carType[_: P]: P[Double] = P( IgnoreCase("R") ~ CharIn("0-9").rep(min = 1, max = 3).! ~ CharIn("ABab").? ~ IgnoreCase("s").? )
     	.map(str => {
 		    (str.toInt match {
 			    case 32 => 60
@@ -45,8 +45,9 @@ object speed extends Command {
 			    case _ => throw ParseError("Unknown train car")
 			}) * 0.3048
 	    })
-	private def car[_: P]: P[Double] = P(carType | distance)
-	private def over[_: P]: P[Double] = P( IgnoreCase("over").? ~ (num ~ "x").? ~ car )
+	private def car[_: P]: P[Double] = P(carType | (distance ~ StringInIgnoreCase("er", "ers").?)).opaque("Car Type/Distance")
+	private def carCount[_: P]: P[Double] = P( (num ~ "x".?) | ("x" ~ num) )
+	private def over[_: P]: P[Double] = P( IgnoreCase("over").? ~ carCount.? ~ car )
     	.map {
 		    case (count, length) => count.getOrElse(1.0) * length
 	    }
@@ -65,8 +66,7 @@ object speed extends Command {
 					val endIndex = 0.max(arg.length - 1)
 					val minIndex = index.min(endIndex)
 					val maxIndex = (index + 10).min(endIndex)
-					println(s"min: $minIndex max: $maxIndex")
-					s"""Parsed failed at "${arg.substring(minIndex, maxIndex)}". Expected $label."""
+					s"""Parsed failed at "${arg.substring(minIndex, maxIndex)}". Expected "$label"."""
 			}
 		}
 
