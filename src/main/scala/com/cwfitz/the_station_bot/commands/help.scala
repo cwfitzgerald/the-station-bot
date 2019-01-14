@@ -8,10 +8,10 @@ import sx.blah.discord.util.EmbedBuilder
 object help extends Command {
 	private val helpMessage: EmbedObject =
 		new EmbedBuilder()
-    	    .withAuthorName("Andrew Cuomo")
-    	    .withAuthorIcon("https://cwfitz.com/s/_qaqGg.jpg")
-    	    .withTitle("Help")
-    	    .withDescription("Help page for The Station's Bot.")
+			.withAuthorName("Andrew Cuomo")
+			.withAuthorIcon("https://cwfitz.com/s/_qaqGg.jpg")
+			.withTitle("Help")
+			.withDescription("Help page for The Station's Bot.")
 			.appendField("!help <module>", "View help on a specific command. Modules: `help`, `speed`.", false)
 			.appendField("!set/add <roles>", "add <roles> to your user separated by commas or spaces", false)
 			.appendField("!rem/remove <roles>", "remove <roles> from your user separated by commas or spaces", false)
@@ -36,7 +36,7 @@ object help extends Command {
 			.appendField("over", "The length of the train being measured. Comes in the form of a car count (`x10` or `10` or `10x`) and a car type (`R32` or `R32s`) or length (`75ft`, `75fters`).", false)
 			.appendField("from", "The time in the video where the train being measured crosses the measuring point (`10.63 seconds`).", false)
 			.appendField("to", "The time in the video where the last car of the train being measured crosses the measuring point (`28.32 seconds`).", false)
-    	    .build()
+			.build()
 
 	override def apply(c: Client, event: MessageReceivedEvent, args: String): Unit = {
 		val module = args.toLowerCase.split(' ').take(1)
