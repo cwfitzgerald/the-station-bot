@@ -18,5 +18,6 @@ object Main {
 		client.addCommand("remove", commands.roles.remove)
 		client.addCommand("delays", commands.delays)
 		client.addCommand("l", commands.random)
+		client.addCommand("speed", commands.speed)
 	}
 }
