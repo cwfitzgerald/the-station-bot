@@ -1,8 +1,9 @@
 package com.cwfitz.the_station_bot.commands
 
-import scala.collection.JavaConverters._
 import com.cwfitz.the_station_bot.{Client, buffered}
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent
+
+import scala.collection.JavaConverters._
 
 object roles {
 	def add(client: Client, event: MessageReceivedEvent, args: String): Unit = {
