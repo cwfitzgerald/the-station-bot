@@ -7,7 +7,7 @@ import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedE
 import scala.util.Try
 
 object speed extends Command {
-	case class ParseError(reason: String) extends Exception
+	case class ParseError(reason: String) extends Exception(reason)
 
 	private def num[_: P]: P[Double] = P(CharsWhileIn("0-9").! ~ ("." ~ CharsWhileIn("0-9")).!.?).opaque("Number")
 		.map {
@@ -25,8 +25,16 @@ object speed extends Command {
 			case (num, "m") => num
 			case (_, unit) => throw ParseError(s"Invalid unit $unit")
 		}
-	private def from[_: P]: P[Double] = P(IgnoreCase("from").? ~/ num ~ StringInIgnoreCase("s", "sec", "second", "seconds").? )
-	private def to[_: P]: P[Double] = P(IgnoreCase("to").? ~/ num ~ StringInIgnoreCase("s", "sec", "second", "seconds").? )
+	private def timeSep[_: P]: P[Unit] = P( ",".? ~ IgnoreCase("and").?)
+	private def seconds[_: P]: P[Double] = P( num ~ StringInIgnoreCase("s", "sec", "secs", "second", "seconds").? )
+	private def minutes[_: P]: P[Double] = P( num ~ StringInIgnoreCase("m", "min", "mins", "minute", "minutes").? ~ timeSep )
+	private def hours[_: P]: P[Double] = P( num ~ StringInIgnoreCase("h", "hr", "hrs", "hour", "hours").? ~ timeSep )
+	private def time[_: P]: P[Double] = P( hours.? ~ minutes.? ~ seconds ).opaque("Time")
+    	.map {
+		    case (h, m, s) => h.getOrElse(0.0) * 3600 + m.getOrElse(0.0) * 60 + s
+	    }
+	private def from[_: P]: P[Double] = P(IgnoreCase("from").? ~/ time )
+	private def to[_: P]: P[Double] = P(IgnoreCase("to").? ~/ time )
 	private def carType[_: P]: P[Double] = P( IgnoreCase("R") ~ CharIn("0-9").rep(min = 1, max = 3).! ~ CharIn("ABab").? ~ IgnoreCase("s").? )
     	.map(str => {
 		    (str.toInt match {
@@ -42,7 +50,7 @@ object speed extends Command {
 			    case 179 => 60
 			    case 188 => 51
 			    case 211 => 60
-			    case _ => throw ParseError("Unknown train car")
+			    case v => throw ParseError(s"Unknown train car R$v")
 			}) * 0.3048
 	    })
 	private def car[_: P]: P[Double] = P(carType | (distance ~ StringInIgnoreCase("er", "ers").?)).opaque("Car Type/Distance")
