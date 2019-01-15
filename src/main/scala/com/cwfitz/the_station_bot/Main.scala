@@ -19,5 +19,7 @@ object Main {
 		client.addCommand("delays", commands.delays)
 		client.addCommand("l", commands.random)
 		client.addCommand("speed", commands.speed)
+		client.addCommand("ping", commands.ping)
+		client.addCommand("pong", commands.ping)
 	}
 }
