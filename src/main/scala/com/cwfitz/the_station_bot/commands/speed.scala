@@ -1,12 +1,16 @@
 package com.cwfitz.the_station_bot.commands
 
-import fastparse._, fastparse.SingleLineWhitespace._
-import com.cwfitz.the_station_bot.{Client, Command, buffered}
-import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent
+import com.cwfitz.the_station_bot.D4JImplicits._
+import com.cwfitz.the_station_bot.{Client, Command}
+import discord4j.core.event.domain.message.MessageCreateEvent
+import fastparse.SingleLineWhitespace._
+import fastparse._
+import org.slf4j.LoggerFactory
 
 import scala.util.Try
 
 object speed extends Command {
+	private val logger = LoggerFactory.getLogger(getClass)
 	case class ParseError(reason: String) extends Exception(reason)
 
 	private def num[_: P]: P[Double] = P(CharsWhileIn("0-9").! ~ ("." ~ CharsWhileIn("0-9")).!.?).opaque("Number")
@@ -25,17 +29,23 @@ object speed extends Command {
 			case (num, "m") => num
 			case (_, unit) => throw ParseError(s"Invalid unit $unit")
 		}
-	private def timeSep[_: P]: P[Unit] = P( ",".? ~ IgnoreCase("and").?)
-	private def seconds[_: P]: P[Double] = P( num ~ StringInIgnoreCase("s", "sec", "secs", "second", "seconds").? )
-	private def minutes[_: P]: P[Double] = P( num ~ StringInIgnoreCase("m", "min", "mins", "minute", "minutes").? ~ timeSep )
-	private def hours[_: P]: P[Double] = P( num ~ StringInIgnoreCase("h", "hr", "hrs", "hour", "hours").? ~ timeSep )
-	private def time[_: P]: P[Double] = P( hours.? ~ minutes.? ~ seconds ).opaque("Time")
-    	.map {
-		    case (h, m, s) => h.getOrElse(0.0) * 3600 + m.getOrElse(0.0) * 60 + s
-	    }
+	private def timeSep[_: P]: P[Unit] = P( ",".? ~ IgnoreCase("and").?).log
+	private def seconds[_: P]: P[Double] = P( num ~ StringInIgnoreCase("s", "sec", "secs", "second", "seconds").? ).log
+	private def minutes[_: P]: P[Double] = P( num ~ StringInIgnoreCase("m", "min", "mins", "minute", "minutes").? ~ timeSep ).log
+	private def hours[_: P]: P[Double] = P( num ~ StringInIgnoreCase("h", "hr", "hrs", "hour", "hours").? ~ timeSep ).log
+	private def timeTryHours[_: P]: P[Double] = P( hours ~ minutes ~ seconds ).log
+		.map {
+			case (hours, minutes, seconds) => hours * 3600 + minutes * 60 + seconds
+		}
+	private def timeTryMinutes[_: P]: P[Double] = P( minutes ~ seconds ).log
+		.map {
+			case (minutes, seconds) => minutes * 60 + seconds
+		}
+	private def timeTrySeconds[_: P]: P[Double] = P( seconds ).log
+	private def time[_: P]: P[Double] = P( timeTryHours | timeTryMinutes | timeTrySeconds ).opaque("Time").log
 	private def from[_: P]: P[Double] = P(IgnoreCase("from").? ~/ time )
 	private def to[_: P]: P[Double] = P(IgnoreCase("to").? ~/ time )
-	private def carType[_: P]: P[Double] = P( IgnoreCase("R") ~ CharIn("0-9").rep(min = 1, max = 3).! ~ CharIn("ABab").? ~ IgnoreCase("s").? )
+	private def carType[_: P]: P[Double] = P( IgnoreCase("R") ~ CharIn("0-9").repX(min = 1, max = 3).! ~ CharIn("ABab").? ~ IgnoreCase("s").? )
     	.map(str => {
 		    (str.toInt match {
 			    case 32 => 60
@@ -64,9 +74,14 @@ object speed extends Command {
 		    case (distance, start, end) => (distance / (end - start)) * 2.237
 	    }
 
-	override def apply(c: Client, e: MessageReceivedEvent, arg: String): Unit = {
-		val message = Try { parse(arg, speedCalc(_), verboseFailures = true) }.toEither match {
-			case Left(exception) => exception.getMessage
+	private def getParseText(arg: String): String = {
+		Try { parse(arg, speedCalc(_), verboseFailures = true) }.toEither match {
+			case Left(exception) => exception match {
+				case ParseError(msg) => msg
+				case _ =>
+					logger.warn("Unhandled exception", exception)
+					s"""Internal parser error "${exception.getMessage}""""
+			}
 			case Right(parsed) => parsed match {
 				case Parsed.Success(value, _) =>
 					"That train is moving at %.1f mph!".format(value)
@@ -77,9 +92,18 @@ object speed extends Command {
 					s"""Parsed failed at "${arg.substring(minIndex, maxIndex)}". Expected "$label"."""
 			}
 		}
+	}
 
-		buffered {
-			e.getChannel.sendMessage(s"${e.getAuthor.mention(true)}: $message")
+	override def apply(c: Client, e: MessageCreateEvent, arg: String): Unit = {
+		if (arg.isEmpty) {
+			help.help(e, "speed")
+		} else {
+			val message = getParseText(arg)
+
+			e.getMessage.getChannel.toScala.flatMap {
+				chan => chan.createMessage(s"${e.getMember.get.getMention}: $message").toScala
+			}.subscribe()
 		}
+
 	}
 }

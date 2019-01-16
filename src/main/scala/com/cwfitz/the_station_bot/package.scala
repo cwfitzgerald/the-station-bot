@@ -1,7 +1,8 @@
 package com.cwfitz
 
-import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent
+import discord4j.core.event.domain.message.MessageCreateEvent
 
 package object the_station_bot {
-	type Command = (Client, MessageReceivedEvent, String) => Unit
+	type Command = (Client, MessageCreateEvent, String) => Unit
+	case class MessageBundle(c: Client, e: MessageCreateEvent, args: String)
 }

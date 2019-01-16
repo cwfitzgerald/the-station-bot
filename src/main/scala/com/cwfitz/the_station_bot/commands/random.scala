@@ -1,7 +1,8 @@
 package com.cwfitz.the_station_bot.commands
 
-import com.cwfitz.the_station_bot.{Client, Command, buffered}
-import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent
+import com.cwfitz.the_station_bot.D4JImplicits._
+import com.cwfitz.the_station_bot.{Client, Command}
+import discord4j.core.event.domain.message.MessageCreateEvent
 
 import scala.util.Random
 
@@ -43,9 +44,9 @@ object random extends Command {
 			":O"
 		)
 
-	override def apply(c: Client, event: MessageReceivedEvent, args: String): Unit = {
-		buffered {
-			event.getChannel.sendMessage(messages(Random.nextInt(messages.length)))
-		}
+	override def apply(c: Client, event: MessageCreateEvent, args: String): Unit = {
+		event.getMessage.getChannel.toScala.flatMap {
+			chan => chan.createMessage(messages(Random.nextInt(messages.length))).toScala
+		}.subscribe()
 	}
 }

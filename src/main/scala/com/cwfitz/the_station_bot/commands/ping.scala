@@ -1,26 +1,40 @@
 package com.cwfitz.the_station_bot.commands
 
-import java.time.ZonedDateTime
+import java.time.{Instant, ZonedDateTime}
 import java.time.temporal.ChronoUnit
 
-import com.cwfitz.the_station_bot.{Client, Command}
-import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent
-import sx.blah.discord.handle.obj.IMessage
+import akka.actor.Actor
+import com.cwfitz.the_station_bot.D4JImplicits._
+import com.cwfitz.the_station_bot.{Client, MessageBundle}
+import discord4j.core.`object`.util.Snowflake
+import discord4j.core.event.domain.message.MessageCreateEvent
+import org.slf4j.LoggerFactory
 
-import scala.collection.immutable
+import scala.collection.mutable
 
-object ping extends Command{
-	private var pingMap = immutable.HashMap[IMessage, ZonedDateTime]()
+class ping extends Actor {
+	private val logger = LoggerFactory.getLogger(getClass)
+	var pingMap: mutable.HashMap[Snowflake, Instant] = mutable.HashMap[Snowflake, Instant]()
 
-	override def apply(c: Client, e: MessageReceivedEvent, args: String): Unit = {
-		pingMap.get(e.getMessage) match {
+	def handle(c: Client, e: MessageCreateEvent, args: String): Unit = {
+		val message = e.getMessage
+		pingMap.get(message.getChannelId) match {
 			case Some(timestamp) =>
-				val time = timestamp.until(ZonedDateTime.now(), ChronoUnit.MILLIS)
-				e.getMessage.edit(s"Pinged! ${time}ms")
-				pingMap -= e.getMessage
+				val time = timestamp.until(message.getTimestamp, ChronoUnit.MILLIS)
+				val id = message.getChannelId
+				message.edit(msg => msg.setContent(s"Pinged! ${time}ms")).block
+				logger.info(s"Pinging ending on channel ${message.getChannelId.asLong} at ${message.getTimestamp.toString}")
+				pingMap -= id
 			case None =>
-				val message = e.getChannel.sendMessage("!pong")
-				pingMap += message -> ZonedDateTime.now()
+				val sendMessage = e.getMessage.getChannel.toScala.flatMap {
+					chan => chan.createMessage("!pong").toScala
+				}.subscribe()
+				pingMap += message.getChannelId -> message.getTimestamp
+				logger.info(s"Pinging starting on channel ${message.getChannelId.asLong} at ${message.getTimestamp.toString}")
 		}
+	}
+
+	override def receive: Receive = {
+		case MessageBundle(c, e, args) => handle(c, e, args)
 	}
 }

@@ -1,5 +1,7 @@
 package com.cwfitz.the_station_bot
 
+import akka.actor.{ActorSystem, Props}
+
 object Main {
 	def main(args: Array[String]): Unit = {
 		val apiKey = sys.env.get("API_KEY") match {
@@ -9,8 +11,12 @@ object Main {
 				sys.exit(1)
 		}
 
+		val actorSystem = ActorSystem("the-station-bot")
+		val pinger = actorSystem.actorOf(Props[commands.ping], "pinger")
+
 		val client = Client(apiKey, "!")
 
+		client.addCommand("", commands.empty)
 		client.addCommand("help", commands.help)
 		client.addCommand("add", commands.roles.add)
 		client.addCommand("set", commands.roles.add)
@@ -19,7 +25,9 @@ object Main {
 		client.addCommand("delays", commands.delays)
 		client.addCommand("l", commands.random)
 		client.addCommand("speed", commands.speed)
-		client.addCommand("ping", commands.ping)
-		client.addCommand("pong", commands.ping)
+		client.addCommand("ping", client.akkaForward(pinger))
+		client.addCommand("pong", client.akkaForward(pinger))
+
+		client.run()
 	}
 }
