@@ -23,15 +23,18 @@ object delays extends Command {
 			"<7> trains are not running as rush hour has been cancelled this <morn/eve>.",
 			"(A) trains are running local north of Chambers as someone forgot that you can flip that switch.",
 			"(B) trains aren't running because the MTA declared today a weekend.",
+			"(B) trains are not running between Prospect Park and Brighton Beach, and (Q) trains are not running between Prospect Park and Coney Island-Stillwell Av due to goats on the tracks.",
 			"Due to an earlier incident, southbound (B) and (D) trains are running local along 6 Av. Then again, they never were much of an express anyway.",
 			"(C) trains are running with 10 cars due to accidental car swaps. It's beneficial, but do you _really_ think we would listen to customers?",
 			"(D) trains are running via the (F) between West 4 St-Washington Sq and Coney Island-Stillwell Av, and (F) trains are running via the (D) between West 4 St-Washington Sq and Coney Island-Stillwell Av because rail control decided to make things a little interesting for this <morn/eve>'s commute.",
 			"(E) trains are running local between Forest Hills-71 Av and Jamaica Center just to piss off Archer Avenue riders.",
 			"(E) and (F) trains are enjoying a conga line into Forest Hills-71 Av and Jackson Heights-Roosevelt Av since passengers can't step aside to let other people off.",
 			"(E), (F), (M), and (R) trains are running with delays because of Forest Hills-71 Av.",
+			"(F) trains are currently hiding in the lower level of Bergen St.",
 			"(G) trains will be stopping wherever they feel like along the platform for the forseeable future due to indecisive Train Operators. We apologize for the inconvenience, but at least you'll get some daily cardio!",
 			"(L) trains are running every 20 minutes through only one of the tunnels all day every day until either Cuomo leaves office or the tunnel collapses.",
 			"(J) trains are not running due to Bombardier being Bombardier.",
+			"(M) trains are running between Delancey St-Essex St and Metropolitan Av-Middle Village due to Chris Christie being stuck in the Chrystie Street Connection",
 			"(M) trains didn't wake up today.",
 			"(Q) trains aren't running because someone pissed in every single car.",
 			"(Q) trains are running with delays after a stubborn N train refused to move past Herald Square.",
@@ -47,9 +50,10 @@ object delays extends Command {
 		}
 		else {
 			val hour = ZonedDateTime.now(ZoneId.of("America/New_York")).getHour
-			val messages = Random.shuffle(delayMessages).take(count).map(s => s" - $s").reduce((a, b) => s"$a\n$b")
+			val messages = Random.shuffle(delayMessages).take(count).map(s => s" - $s").mkString("\n")
 			val filtered = messages.replace("<morn/eve>", if (hour < 12) "morning" else "evening")
-			s"The current delays:\n$filtered"
+			val emoji = EmojiFilter.trainspeak(filtered)
+			s"The current delays:\n$emoji"
 		}
 		event.getMessage.getChannel.toScala.flatMap {
 			chan => chan.createMessage(msg).toScala

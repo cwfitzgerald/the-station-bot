@@ -1,23 +1,24 @@
 package com.cwfitz.the_station_bot.commands
 
-import java.util.function.Consumer
-
-import com.cwfitz.the_station_bot.{Client, Command}
+import akka.actor.ActorRef
+import com.cwfitz.the_station_bot.{Command, EmojiFilter}
 import com.cwfitz.the_station_bot.D4JImplicits._
 import discord4j.core.event.domain.message.MessageCreateEvent
-import discord4j.core.spec.{EmbedCreateSpec, MessageCreateSpec}
+import discord4j.core.spec.EmbedCreateSpec
 
 object help extends Command {
 	private def helpMessage(spec: EmbedCreateSpec): Unit = spec
 		.setAuthor("Andrew Cuomo", null, "https://cwfitz.com/s/_qaqGg.jpg")
 		.setTitle("Help")
 		.setDescription("Help page for The Station's Bot.")
-		.addField("!help <module>", "View help on a specific command. Modules: `help`, `speed`.", false)
+		.addField("!help <module>", "View help on a specific command. Modules: `help`, `speed`, `emoji`.", false)
 		.addField("!ping", "View bot ping time.", false)
 		.addField("!set/add <roles>", "add <roles> to your user separated by commas or spaces", false)
 		.addField("!rem/remove <roles>", "remove <roles> from your user separated by commas or spaces", false)
 		.addField("!speed", "Calculate speed of a train based on its length and the time it takes to cross a single point. `!help speed` for more.", false)
 		.addField("!delays <count>", "See train delays. `!help delays` for more.", false)
+		.addField("!emoji <msg>", "Perform various text replacements so you speak in emoji.", false)
+		.addField("!trainspeak <msg>", "Perform various text replacements on the input string including adding line bullet emoji.", false)
 		.addField("!L", "L", false)
 
 	private def speedHelpMessage(spec: EmbedCreateSpec): Unit = spec
@@ -55,12 +56,45 @@ object help extends Command {
 		)
 		.addField("count", "The amount of delays to show. Max 10.", false)
 
+	private def emojiSpeak(spec: EmbedCreateSpec): Unit = {
+		spec.setAuthor("Andrew Cuomo", null, "https://cwfitz.com/s/_qaqGg.jpg")
+			.setTitle("!emoji <msg>")
+			.setDescription(
+				"""Filters the input message through an emoji filter.
+				  |
+				  |The following replacements will be made:
+				  |""".stripMargin
+			)
+		for (emojiGroup <- EmojiFilter.emojiMap.toSeq.grouped((EmojiFilter.emojiMap.size + 2) / 3)) {
+			spec.addField(s"​", emojiGroup.map(emoji => s"""`${emoji._1}` -> ${emoji._2}\n""").mkString, true)
+		}
+		spec.addField("\u200B", "`Everything else` -> 🅱", true)
+	}
+
+	private def trainSpeakMessage(spec: EmbedCreateSpec): Unit = {
+		spec.setAuthor("Andrew Cuomo", null, "https://cwfitz.com/s/_qaqGg.jpg")
+			.setTitle("!trainspeak <msg>")
+			.setDescription(
+				"""Filters the input message through a trainspeak filter.
+				  |
+				  |"(7)" -> <:7_Train:333805562414366720>
+				  |
+				  |The following replacements will be made:
+				  |""".stripMargin
+			)
+		for (emojiGroup <- EmojiFilter.trainSpeakMap.toSeq.grouped((EmojiFilter.trainSpeakMap.size + 2) / 3)) {
+			spec.addField("\u200B​", emojiGroup.map(emoji => s"""`${emoji._1}` -> ${emoji._2}\n""").mkString, true)
+		}
+	}
+
 	def help(event: MessageCreateEvent, args: String): Unit = {
 		val module = args.toLowerCase.split(' ').take(1)
 		val embedFunc = module(0) match {
 			case "l" => lMessage _
 			case "speed" => speedHelpMessage _
 			case "delays" => delaysMessage _
+			case "emoji" => emojiSpeak _
+			case "trainspeak" => trainSpeakMessage _
 			case "help" => helpMessage _
 			case "" => helpMessage _
 			case m =>
