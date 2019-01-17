@@ -1,11 +1,11 @@
 package com.cwfitz.the_station_bot.commands
 
-import java.time.{Instant, ZonedDateTime}
+import java.time.Instant
 import java.time.temporal.ChronoUnit
 
-import akka.actor.Actor
+import akka.actor.{Actor, ActorRef}
 import com.cwfitz.the_station_bot.D4JImplicits._
-import com.cwfitz.the_station_bot.{Client, MessageBundle}
+import com.cwfitz.the_station_bot.MessageBundle
 import discord4j.core.`object`.util.Snowflake
 import discord4j.core.event.domain.message.MessageCreateEvent
 import org.slf4j.LoggerFactory
@@ -16,7 +16,7 @@ class ping extends Actor {
 	private val logger = LoggerFactory.getLogger(getClass)
 	var pingMap: mutable.HashMap[Snowflake, Instant] = mutable.HashMap[Snowflake, Instant]()
 
-	def handle(c: Client, e: MessageCreateEvent, args: String): Unit = {
+	def handle(c: ActorRef, e: MessageCreateEvent, command: String, args: String): Unit = {
 		val message = e.getMessage
 		pingMap.get(message.getChannelId) match {
 			case Some(timestamp) =>
@@ -35,6 +35,6 @@ class ping extends Actor {
 	}
 
 	override def receive: Receive = {
-		case MessageBundle(c, e, args) => handle(c, e, args)
+		case MessageBundle(c, e, com, args) => handle(c, e, com, args)
 	}
 }

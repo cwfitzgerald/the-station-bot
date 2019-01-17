@@ -75,7 +75,7 @@ object help extends Command {
 		}.subscribe()
 	}
 
-	override def apply(c: Client, event: MessageCreateEvent, args: String): Unit = {
+	override def apply(c: ActorRef, event: MessageCreateEvent, command: String, args: String): Unit = {
 		help(event, args)
 	}
 }

@@ -1,31 +1,25 @@
 package com.cwfitz.the_station_bot
 
 import akka.actor.Actor
+import com.cwfitz.the_station_bot.D4JImplicits._
 
 import scala.collection.mutable
-import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, Future}
 
 class CommandDispatch extends Actor {
 	implicit val ec: ExecutionContext = context.system.dispatcher
 	private val commandMap = mutable.HashMap[String, Command]()
 
 	override def receive: Receive = {
-		case CommandDispatch.AddCommand(name, action) =>
+		case Client.AddCommand(name, action) =>
 			commandMap += name -> action
-		case CommandDispatch.RemoveCommand(name) =>
+		case Client.RemoveCommand(name) =>
 			commandMap -= name
-		case CommandDispatch.DispatchCommand(name, bundle) =>
+		case Client.DispatchCommand(name, bundle) =>
 			commandMap.get(name) match {
-				case Some(f) => Future { f(bundle.c, bundle.e, bundle.args) }
+				case Some(f) => Future { f(bundle.client, bundle.event, bundle.command, bundle.args) }
 				case None =>
-					sender ! CommandDispatch.EmptyCommand(name)
+					sender ! Client.EmptyCommand(name, bundle.event.getMessage.getChannel.toScala)
 			}
 	}
-}
-object CommandDispatch {
-	case class AddCommand(name: String, action: Command)
-	case class RemoveCommand(name: String)
-	case class DispatchCommand(name: String, bundle: MessageBundle)
-	case class EmptyCommand(name: String)
 }

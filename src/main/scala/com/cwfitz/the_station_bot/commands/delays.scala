@@ -2,10 +2,10 @@ package com.cwfitz.the_station_bot.commands
 
 import java.time.{ZoneId, ZonedDateTime}
 
+import akka.actor.ActorRef
+import com.cwfitz.the_station_bot.{Command, EmojiFilter}
 import com.cwfitz.the_station_bot.D4JImplicits._
-import com.cwfitz.the_station_bot.{Client, Command}
 import discord4j.core.event.domain.message.MessageCreateEvent
-
 
 import scala.util.{Random, Try}
 
@@ -39,7 +39,7 @@ object delays extends Command {
 			"(Z) trains are not running today. But did they ever really run?"
 		)
 
-	override def apply(c: Client, event: MessageCreateEvent, args: String): Unit = {
+	override def apply(client: ActorRef, event: MessageCreateEvent, command: String, args: String): Unit = {
 		val count = Try { args.toInt }.getOrElse(Random.nextInt(2) + 2).min(10)
 
 		val msg = if (count == 0) {

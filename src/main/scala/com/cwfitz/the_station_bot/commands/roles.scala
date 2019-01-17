@@ -1,19 +1,19 @@
 package com.cwfitz.the_station_bot.commands
 
-import com.cwfitz.the_station_bot.D4JImplicits._
+import akka.actor.ActorRef
 import com.cwfitz.the_station_bot.Client
-import discord4j.core.event.domain.message.MessageCreateEvent
-
-import scala.collection.JavaConverters._
 import com.cwfitz.the_station_bot.D4JImplicits._
 import discord4j.core.`object`.entity.Role
+import discord4j.core.event.domain.message.MessageCreateEvent
 import org.slf4j.{Logger, LoggerFactory}
 import reactor.core.scala.publisher.{Flux, Mono}
+
+import scala.collection.JavaConverters._
 
 object roles {
 	val logger: Logger = LoggerFactory.getLogger(getClass)
 
-	def add(client: Client, event: MessageCreateEvent, args: String): Unit = {
+	def add(client: ActorRef, event: MessageCreateEvent, command: String, args: String): Unit = {
 		val routes = args.toUpperCase.split(Array(',', ' '))
 		val user = event.getMember.get()
 		val valid = for {
@@ -41,7 +41,7 @@ object roles {
 					else
 						"You already have all of those roles."
 				else
-					"Added: " + mentions.sorted.reduce(_ + ", " + _)
+					"Added: " + mentions.sorted.mkString(", ")
 		)
         .flatMap(
 		    str => event.getMessage.getChannel.toScala.flatMap(
@@ -49,7 +49,7 @@ object roles {
 		    )
 	    ).subscribe()
 	}
-	def remove(client: Client, event: MessageCreateEvent, args: String): Unit = {
+	def remove(client: ActorRef, event: MessageCreateEvent, command: String, args: String): Unit = {
 		val routes = args.toUpperCase.split(Array(',', ' '))
 		val user = event.getMember.get()
 		val valid: Flux[(String, Role)] = for {
@@ -77,7 +77,7 @@ object roles {
 					else
 						"You don't have any of those roles."
 				else
-					"Removed: " + mentions.sorted.reduce(_ + ", " + _)
+					"Removed: " + mentions.sorted.mkString(", ")
 		)
 		.flatMap(
 			str => event.getMessage.getChannel.toScala.flatMap(

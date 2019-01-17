@@ -12,22 +12,23 @@ object Main {
 		}
 
 		val actorSystem = ActorSystem("the-station-bot")
+		val client = Client(actorSystem, apiKey, "!")
 		val pinger = actorSystem.actorOf(Props[commands.ping], "pinger")
 
-		val client = Client(actorSystem, apiKey, "!")
+		client ! ("", commands.empty)
+		client ! Client.AddCommand("help", commands.help)
+		client ! Client.AddCommand("add", commands.roles.add)
+		client ! Client.AddCommand("set", commands.roles.add)
+		client ! Client.AddCommand("rem", commands.roles.remove)
+		client ! Client.AddCommand("remove", commands.roles.remove)
+		client ! Client.AddCommand("delays", commands.delays)
+		client ! Client.AddCommand("emoji", commands.emoji)
+		client ! Client.AddCommand("trainspeak", commands.emoji)
+		client ! Client.AddCommand("l", commands.random)
+		client ! Client.AddCommand("speed", commands.speed)
+		client ! Client.AddCommandActor("ping", pinger)
+		client ! Client.AddCommandActor("pong", pinger)
 
-		client.addCommand("", commands.empty)
-		client.addCommand("help", commands.help)
-		client.addCommand("add", commands.roles.add _)
-		client.addCommand("set", commands.roles.add _)
-		client.addCommand("rem", commands.roles.remove _)
-		client.addCommand("remove", commands.roles.remove _)
-		client.addCommand("delays", commands.delays)
-		client.addCommand("l", commands.random)
-		client.addCommand("speed", commands.speed)
-		client.addCommand("ping", pinger)
-		client.addCommand("pong", pinger)
-
-		client.run()
+		client ! Client.Run
 	}
 }

@@ -1,5 +1,6 @@
 package com.cwfitz.the_station_bot.commands
 
+import akka.actor.ActorRef
 import com.cwfitz.the_station_bot.D4JImplicits._
 import com.cwfitz.the_station_bot.{Client, Command}
 import discord4j.core.event.domain.message.MessageCreateEvent
@@ -29,20 +30,20 @@ object speed extends Command {
 			case (num, "m") => num
 			case (_, unit) => throw ParseError(s"Invalid unit $unit")
 		}
-	private def timeSep[_: P]: P[Unit] = P( ",".? ~ IgnoreCase("and").?).log
-	private def seconds[_: P]: P[Double] = P( num ~ StringInIgnoreCase("s", "sec", "secs", "second", "seconds").? ).log
-	private def minutes[_: P]: P[Double] = P( num ~ StringInIgnoreCase("m", "min", "mins", "minute", "minutes").? ~ timeSep ).log
-	private def hours[_: P]: P[Double] = P( num ~ StringInIgnoreCase("h", "hr", "hrs", "hour", "hours").? ~ timeSep ).log
-	private def timeTryHours[_: P]: P[Double] = P( hours ~ minutes ~ seconds ).log
+	private def timeSep[_: P]: P[Unit] = P( ",".? ~ IgnoreCase("and").?)
+	private def seconds[_: P]: P[Double] = P( num ~ StringInIgnoreCase("s", "sec", "secs", "second", "seconds").? )
+	private def minutes[_: P]: P[Double] = P( num ~ StringInIgnoreCase("m", "min", "mins", "minute", "minutes").? ~ timeSep )
+	private def hours[_: P]: P[Double] = P( num ~ StringInIgnoreCase("h", "hr", "hrs", "hour", "hours").? ~ timeSep )
+	private def timeTryHours[_: P]: P[Double] = P( hours ~ minutes ~ seconds )
 		.map {
 			case (hours, minutes, seconds) => hours * 3600 + minutes * 60 + seconds
 		}
-	private def timeTryMinutes[_: P]: P[Double] = P( minutes ~ seconds ).log
+	private def timeTryMinutes[_: P]: P[Double] = P( minutes ~ seconds )
 		.map {
 			case (minutes, seconds) => minutes * 60 + seconds
 		}
-	private def timeTrySeconds[_: P]: P[Double] = P( seconds ).log
-	private def time[_: P]: P[Double] = P( timeTryHours | timeTryMinutes | timeTrySeconds ).opaque("Time").log
+	private def timeTrySeconds[_: P]: P[Double] = P( seconds )
+	private def time[_: P]: P[Double] = P( timeTryHours | timeTryMinutes | timeTrySeconds ).opaque("Time")
 	private def from[_: P]: P[Double] = P(IgnoreCase("from").? ~/ time )
 	private def to[_: P]: P[Double] = P(IgnoreCase("to").? ~/ time )
 	private def carType[_: P]: P[Double] = P( IgnoreCase("R") ~ CharIn("0-9").repX(min = 1, max = 3).! ~ CharIn("ABab").? ~ IgnoreCase("s").? )
@@ -94,7 +95,7 @@ object speed extends Command {
 		}
 	}
 
-	override def apply(c: Client, e: MessageCreateEvent, arg: String): Unit = {
+	override def apply(client: ActorRef, e: MessageCreateEvent, command: String, arg: String): Unit = {
 		if (arg.isEmpty) {
 			help.help(e, "speed")
 		} else {
