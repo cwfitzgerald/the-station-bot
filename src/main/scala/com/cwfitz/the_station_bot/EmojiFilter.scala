@@ -1,7 +1,7 @@
 package com.cwfitz.the_station_bot
 
+import fastparse.NoWhitespace._
 import fastparse._
-import NoWhitespace._
 import org.slf4j.LoggerFactory
 
 import scala.collection.immutable

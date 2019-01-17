@@ -1,11 +1,11 @@
 package com.cwfitz.the_station_bot.commands
 
 import akka.actor.ActorRef
+import com.cwfitz.the_station_bot.D4JImplicits._
 import com.cwfitz.the_station_bot.{ChannelExtractor, Command, EmojiFilter}
+import discord4j.core.`object`.entity.TextChannel
 import discord4j.core.`object`.util.Snowflake
 import discord4j.core.event.domain.message.MessageCreateEvent
-import com.cwfitz.the_station_bot.D4JImplicits._
-import discord4j.core.`object`.entity.TextChannel
 
 object emoji extends Command {
 	override def apply(v1: ActorRef, v2: MessageCreateEvent, command: String, arg: String): Unit = {

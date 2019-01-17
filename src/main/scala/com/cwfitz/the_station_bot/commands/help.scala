@@ -1,8 +1,8 @@
 package com.cwfitz.the_station_bot.commands
 
 import akka.actor.ActorRef
-import com.cwfitz.the_station_bot.{Command, EmojiFilter}
 import com.cwfitz.the_station_bot.D4JImplicits._
+import com.cwfitz.the_station_bot.{Command, EmojiFilter}
 import discord4j.core.event.domain.message.MessageCreateEvent
 import discord4j.core.spec.EmbedCreateSpec
 

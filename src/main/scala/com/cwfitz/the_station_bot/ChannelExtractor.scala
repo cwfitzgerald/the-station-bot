@@ -1,7 +1,5 @@
 package com.cwfitz.the_station_bot
 
-import scala.util.matching.Regex
-
 object ChannelExtractor {
 	private val pattern = "<#([0-9]+)>".r
 

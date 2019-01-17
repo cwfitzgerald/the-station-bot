@@ -3,8 +3,8 @@ package com.cwfitz.the_station_bot.commands
 import java.time.{ZoneId, ZonedDateTime}
 
 import akka.actor.ActorRef
-import com.cwfitz.the_station_bot.{Command, EmojiFilter}
 import com.cwfitz.the_station_bot.D4JImplicits._
+import com.cwfitz.the_station_bot.{Command, EmojiFilter}
 import discord4j.core.event.domain.message.MessageCreateEvent
 
 import scala.util.{Random, Try}
