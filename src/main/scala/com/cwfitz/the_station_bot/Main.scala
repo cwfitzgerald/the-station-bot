@@ -14,19 +14,19 @@ object Main {
 		val actorSystem = ActorSystem("the-station-bot")
 		val pinger = actorSystem.actorOf(Props[commands.ping], "pinger")
 
-		val client = Client(apiKey, "!")
+		val client = Client(actorSystem, apiKey, "!")
 
 		client.addCommand("", commands.empty)
 		client.addCommand("help", commands.help)
-		client.addCommand("add", commands.roles.add)
-		client.addCommand("set", commands.roles.add)
-		client.addCommand("rem", commands.roles.remove)
-		client.addCommand("remove", commands.roles.remove)
+		client.addCommand("add", commands.roles.add _)
+		client.addCommand("set", commands.roles.add _)
+		client.addCommand("rem", commands.roles.remove _)
+		client.addCommand("remove", commands.roles.remove _)
 		client.addCommand("delays", commands.delays)
 		client.addCommand("l", commands.random)
 		client.addCommand("speed", commands.speed)
-		client.addCommand("ping", client.akkaForward(pinger))
-		client.addCommand("pong", client.akkaForward(pinger))
+		client.addCommand("ping", pinger)
+		client.addCommand("pong", pinger)
 
 		client.run()
 	}

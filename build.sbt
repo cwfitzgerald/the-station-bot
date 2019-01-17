@@ -15,7 +15,6 @@ lazy val the_station_bot = Project("the-station-bot", file("."))
 	        "ch.qos.logback" % "logback-classic" % "1.2.3",
 			"com.lihaoyi" %% "fastparse" % "2.1.0",
 			"com.typesafe.akka" %% "akka-actor" % "2.5.19",
-			"com.typesafe.akka" %% "akka-testkit" % "2.5.19" % Test
 	    ),
 	    updateOptions := updateOptions.value.withLatestSnapshots(false),
 	    assemblyJarName in assembly := "the-station-bot.jar",

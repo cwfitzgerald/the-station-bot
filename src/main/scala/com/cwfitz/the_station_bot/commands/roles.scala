@@ -36,7 +36,10 @@ object roles {
 		.map (
 			(mentions: Seq[String]) =>
 				if (mentions.isEmpty)
-					"You don't have any of those roles."
+					if(args.isEmpty || args.map(_.isWhitespace).reduce(_ || _))
+						"I was given no roles to add."
+					else
+						"You already have all of those roles."
 				else
 					"Added: " + mentions.sorted.reduce(_ + ", " + _)
 		)
@@ -69,7 +72,10 @@ object roles {
 		.map (
 			(mentions: Seq[String]) =>
 				if (mentions.isEmpty)
-					"You don't have any of those roles."
+					if(args.isEmpty || args.map(_.isWhitespace).reduce(_ || _))
+						"I was given no roles to remove."
+					else
+						"You don't have any of those roles."
 				else
 					"Removed: " + mentions.sorted.reduce(_ + ", " + _)
 		)

@@ -1,6 +1,6 @@
 package com.cwfitz.the_station_bot
 
-import akka.actor.ActorRef
+import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import com.cwfitz.the_station_bot.D4JImplicits._
 import discord4j.core.event.domain.message.MessageCreateEvent
 import discord4j.core.{DiscordClient, DiscordClientBuilder}
@@ -8,21 +8,21 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 
-class Client (val client: DiscordClient, val prefix: String) {
+class Client (val client: DiscordClient, val prefix: String) extends Actor {
 	private val logger = LoggerFactory.getLogger(getClass)
+	private val dispatcher = context.actorOf(Props[CommandDispatch], "dispatcher")
 
-	private val commandMap: mutable.Map[String, Command] =
-		mutable.HashMap[String, Command]()
-
-	def akkaForward(actor: ActorRef): (Client, MessageCreateEvent, String) => Unit =
+	private def akkaForward(actor: ActorRef): (Client, MessageCreateEvent, String) => Unit =
 		(c: Client, e: MessageCreateEvent, args: String) =>
 			actor ! MessageBundle(c, e, args)
 
-	def addCommand(name: String, handler: Command): Client = {
-		commandMap += name -> handler
-		this
+	def addCommand(name: String, handler: Command) = {
+		dispatcher ! CommandDispatch.AddCommand(name, handler)
 	}
-	def removeCommand(name: String): Boolean = {
+	def addCommand(name: String, handler: ActorRef) = {
+		dispatcher ! CommandDispatch.AddCommand(name, akkaForward(handler))
+	}
+	def removeCommand(name: String) = {
 		commandMap.remove(name).isDefined
 	}
 
@@ -53,7 +53,7 @@ class Client (val client: DiscordClient, val prefix: String) {
 	}
 }
 object Client {
-	def apply(apiKey: String, prefix: String): Client = {
+	def apply(actorSystem: ActorSystem, apiKey: String, prefix: String): Client = {
 		val iClient = new DiscordClientBuilder(apiKey).build()
 		val client = new Client(iClient, prefix)
 		//noinspection ConvertibleToMethodValue
