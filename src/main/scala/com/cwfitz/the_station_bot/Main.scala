@@ -24,7 +24,7 @@ object Main {
 		client ! Client.AddCommand("delays", commands.delays)
 		client ! Client.AddCommand("emoji", commands.emoji)
 		client ! Client.AddCommand("trainspeak", commands.emoji)
-		client ! Client.AddCommand("l", commands.random)
+		client ! Client.AddCommand("ll", commands.random)
 		client ! Client.AddCommand("speed", commands.speed)
 		client ! Client.AddCommandActor("ping", pinger)
 		client ! Client.AddCommandActor("pong", pinger)

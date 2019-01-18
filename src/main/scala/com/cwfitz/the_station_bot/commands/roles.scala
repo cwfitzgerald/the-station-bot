@@ -42,7 +42,7 @@ object roles {
 				else
 					"Added: " + mentions.sorted.mkString(", ")
 		)
-        .flatMap(
+		.flatMap(
 		    str => event.getMessage.getChannel.toScala.flatMap(
 			    _.createMessage(str).toScala
 		    )
