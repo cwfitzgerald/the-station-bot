@@ -28,9 +28,10 @@ class CommandDispatch extends Actor {
 			commandMap.get(name) match {
 				case Some(f) => Future { f(bundle.client, bundle.event, bundle.command, bundle.args) }
 				case None =>
-					val fuzzyMatch = FuzzySearch.extractOne(name, commandNames.asJavaCollection)
+					val (fuzzyMatch, fuzzyTime) = Time { FuzzySearch.extractOne(name, commandNames.asJavaCollection) }
 					val issue = fuzzyMatch.getScore >= 75
-					logger.info(s"""Incorrect command "$name". Fuzzymatched "${fuzzyMatch.getString}" at score ${fuzzyMatch.getScore}. ${if (issue) "Calling" else "Not Calling"}.""")
+					logger.info(f"""Incorrect command "$name". Fuzzymatched "${fuzzyMatch.getString}" at score ${fuzzyMatch.getScore}. ${if (issue) "Calling" else "Not Calling"}.""")
+					logger.debug(f"""Fuzzy matching of "$name" -> "${fuzzyMatch.getString}" in ${fuzzyTime / 1000000.0}%.2fms.""")
 					if (issue) Future {
 						bundle.event.getMessage.getChannel.toScala.flatMap {
 							_.createMessage(s"You gave me the command `$name`, but that ain't a thing, so here's `${fuzzyMatch.getString}`.").toScala

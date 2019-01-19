@@ -1,7 +1,7 @@
 package com.cwfitz.the_station_bot.commands
 
 import akka.actor.ActorRef
-import com.cwfitz.the_station_bot.Command
+import com.cwfitz.the_station_bot.{Command, Time}
 import com.cwfitz.the_station_bot.D4JImplicits._
 import discord4j.core.event.domain.message.MessageCreateEvent
 import fastparse.SingleLineWhitespace._
@@ -99,7 +99,8 @@ object speed extends Command {
 		if (arg.isEmpty) {
 			help.help(e, "speed")
 		} else {
-			val message = getParseText(arg)
+			val (message, time) = Time{ getParseText(arg) }
+			logger.debug(f"Parsed speed command in ${time / 1000000.0}%.2fms")
 
 			e.getMessage.getChannel.toScala.flatMap {
 				chan => chan.createMessage(s"${e.getMember.get.getMention}: $message").toScala

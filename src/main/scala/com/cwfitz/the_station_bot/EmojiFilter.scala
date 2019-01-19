@@ -130,10 +130,11 @@ object EmojiFilter {
 	)
 
 	def trainspeak(input: String): String = {
-		parse(input, trainFilter(_)) match {
-			case Parsed.Success(value, _) =>
+		Time { parse(input, trainFilter(_)) } match {
+			case (Parsed.Success(value, _), time) =>
+				logger.debug(f"Trainspeak converted in ${time / 1000000.0}%.2fms")
 				value
-			case Parsed.Failure(label, index, _) =>
+			case (Parsed.Failure(label, index, _), _) =>
 				logger.warn(s"""Emoji substitution failed. Input: "$input". Error "$label". Index: $index""")
 				input
 		}
@@ -178,7 +179,19 @@ object EmojiFilter {
 		'0' -> "🅾"
 	)
 
+	private val emojiRegex = "<:[^:]*:[0-9]*>".r
+
 	def emojiSpeak(input: String): String = {
-		input.map(c => if (c.isLetterOrDigit) emojiMap.getOrElse(c.toUpper, "🅱") else c.toString).mkString("\u200B")
+		val (result, time) = Time {
+			val removedText = emojiRegex.replaceAllIn(input, "\0")
+			val emoji = emojiRegex.findAllIn(input).toArray
+			val emojiText = removedText.map(c => if (c.isLetterOrDigit) emojiMap.getOrElse(c.toUpper, "🅱") else c.toString).mkString("\u200B")
+			var count = 0
+			emojiText.map(c => if (c == '\0') {
+				val e = emoji(count); count += 1; e
+			} else c.toString).mkString
+		}
+		logger.debug(f"Emojis converted in ${time / 1000000.0}%.2fms")
+		result
 	}
 }

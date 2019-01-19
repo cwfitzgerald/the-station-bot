@@ -15,7 +15,7 @@ object emoji extends Command {
 		else {
 			command match {
 				case "trainspeak" => EmojiFilter.trainspeak(ChannelExtractor.remove(arg))
-				case "emoji" => EmojiFilter.emojiSpeak(ChannelExtractor.remove(arg))
+				case "emoji" => EmojiFilter.emojiSpeak(EmojiFilter.trainspeak(ChannelExtractor.remove(arg)))
 			}
 		}
 

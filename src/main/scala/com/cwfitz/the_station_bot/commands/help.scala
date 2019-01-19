@@ -2,11 +2,14 @@ package com.cwfitz.the_station_bot.commands
 
 import akka.actor.ActorRef
 import com.cwfitz.the_station_bot.D4JImplicits._
-import com.cwfitz.the_station_bot.{Command, EmojiFilter}
+import com.cwfitz.the_station_bot.{Command, EmojiFilter, Time}
 import discord4j.core.event.domain.message.MessageCreateEvent
 import discord4j.core.spec.EmbedCreateSpec
+import org.slf4j.LoggerFactory
 
 object help extends Command {
+	val logger = LoggerFactory.getLogger(getClass)
+
 	private def helpMessage(spec: EmbedCreateSpec): Unit = spec
 		.setAuthor("Andrew Cuomo", null, "https://cwfitz.com/s/_qaqGg.jpg")
 		.setTitle("Help")
@@ -62,6 +65,8 @@ object help extends Command {
 			.setDescription(
 				"""Filters the input message through an emoji filter.
 				  |
+				  |Text will first be run through the `trainspeak` filter.
+				  |
 				  |The following replacements will be made:
 				  |""".stripMargin
 			)
@@ -105,7 +110,7 @@ object help extends Command {
 		}
 
 		event.getMessage.getChannel.toScala.flatMap {
-			chan => chan.createMessage(x => x.setEmbed(embedFunc(_))).toScala
+			chan => chan.createMessage(x => x.setEmbed(x => { val (_, t) = Time { embedFunc(x) }; logger.debug(f"Printed help in ${t / 1000000.0}%.2fms") })).toScala
 		}.subscribe()
 	}
 
