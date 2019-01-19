@@ -1,6 +1,7 @@
 package com.cwfitz.the_station_bot
 
 import akka.actor.{ActorSystem, Props}
+import com.cwfitz.the_station_bot.database.DBWrapper
 
 object Main {
 	def main(args: Array[String]): Unit = {
@@ -10,6 +11,8 @@ object Main {
 				println("Cannot find API_KEY.")
 				sys.exit(1)
 		}
+
+		DBWrapper()
 
 		val actorSystem = ActorSystem("the-station-bot")
 		val client = Client(actorSystem, apiKey, "!")
