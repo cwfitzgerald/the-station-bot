@@ -5,8 +5,6 @@ import java.util.Optional
 import reactor.core.publisher
 import reactor.core.scala.publisher.{Flux, Mono, PimpMyPublisher}
 
-import scala.language.implicitConversions
-
 object D4JImplicits {
 	implicit class OptJ2S[T >: Null](val op: Optional[T]) extends AnyVal {
 		def toScala: Option[T] = Option(op.orElse(null))
@@ -31,9 +29,11 @@ object D4JImplicits {
 		def withFilter(pred: T => Boolean): Flux[T] = f.filter(pred)
 		def foreach[U](func: T => U): Unit = f.subscribe(t => func(t))
 		def map[U](func: T => U): Unit = f.map(func)
+		def zipSingle[T2](other: Mono[T2]): Flux[(T, T2)] = f.zipWith(other.flux().repeat())
 	}
 	implicit class MonoMonadic[T](val m: Mono[T]) extends AnyVal {
 		def withFilter(pred: T => Boolean): Mono[T] = m.filter(pred)
 		def foreach[U](func: T => U): Unit = m.subscribe(t => func(t))
+		def zip[T2](other: Mono[T2]): Mono[(T, T2)] = m.toJava.zipWith(other.toJava).toScala.map(t => Tuple2(t.getT1, t.getT2))
 	}
 }

@@ -65,7 +65,7 @@ object roles {
 				.`then`(Mono.just(x))
 		).map(
 			(x: (String, Role)) => x match {
-				case x @ (_, role) => role.getMention
+				case (_, role) => role.getMention
 			}
 		).collectSeq
 		.map (

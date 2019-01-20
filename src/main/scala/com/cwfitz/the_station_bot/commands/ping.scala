@@ -5,7 +5,7 @@ import java.time.temporal.ChronoUnit
 
 import akka.actor.{Actor, ActorRef}
 import com.cwfitz.the_station_bot.D4JImplicits._
-import com.cwfitz.the_station_bot.MessageBundle
+import com.cwfitz.the_station_bot.{Client, MessageBundle}
 import discord4j.core.`object`.util.Snowflake
 import discord4j.core.event.domain.message.MessageCreateEvent
 import org.slf4j.LoggerFactory
@@ -26,9 +26,7 @@ class ping extends Actor {
 				logger.info(s"Pinging ending on channel ${message.getChannelId.asLong} at ${message.getTimestamp.toString}")
 				pingMap -= id
 			case None =>
-				val sendMessage = e.getMessage.getChannel.toScala.flatMap {
-					chan => chan.createMessage("!pong").toScala
-				}.subscribe()
+				c ! Client.SendCommand(e.getGuildId.get, message.getChannel.toScala, "pong")
 				pingMap += message.getChannelId -> message.getTimestamp
 				logger.info(s"Pinging starting on channel ${message.getChannelId.asLong} at ${message.getTimestamp.toString}")
 		}

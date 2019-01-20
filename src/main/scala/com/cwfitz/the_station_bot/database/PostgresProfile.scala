@@ -2,7 +2,7 @@ package com.cwfitz.the_station_bot.database
 
 import com.github.tminglei.slickpg._
 import slick.basic.Capability
-import slick.driver.JdbcProfile
+import slick.jdbc.JdbcCapabilities
 
 trait PostgresProfile extends ExPostgresProfile
 	with PgArraySupport
@@ -16,7 +16,7 @@ trait PostgresProfile extends ExPostgresProfile
 
 	// Add back `capabilities.insertOrUpdate` to enable native `upsert` support; for postgres 9.5+
 	override protected def computeCapabilities: Set[Capability] =
-		super.computeCapabilities + JdbcProfile.capabilities.insertOrUpdate
+		super.computeCapabilities + JdbcCapabilities.insertOrUpdate
 
 	override val api: MyAPI.type = MyAPI
 

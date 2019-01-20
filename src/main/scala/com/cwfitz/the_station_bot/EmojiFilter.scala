@@ -64,7 +64,7 @@ object EmojiFilter {
 			"<Rbr>",
 			"<W>",
 		).!
-	).map(trainSpeakMap(_))
+	).map(s => trainSpeakMap(s.toUpperCase))
 	private def scanForward[_: P] = P ( CharsWhile(c => c != '(' && c != '<', 0).! )
 	private def trainOrElse[_: P] = P( trainDetect | ("(" | "<").! )
 	private def trainFilter[_: P] = P( scanForward ~ (trainOrElse ~ scanForward ).rep )
@@ -114,15 +114,15 @@ object EmojiFilter {
 		"(W)" -> "<:W_Train:333805891327623179>",
 		"<W>" -> "<:wtraind:485131909039390762>",
 		"(Z)" -> "<:Z_Train:333805907567968257>",
-		"(Byl)" -> "<:yellowb:485131650536046600>",
-		"(Dyl)" -> "<:yellowd:485131705481428997>",
+		"(BYL)" -> "<:yellowb:485131650536046600>",
+		"(DYL)" -> "<:yellowd:485131705481428997>",
 		"(Fpk)" -> "<:pinkf:486725794664808459>",
-		"(Mbr)" -> "<:brownm:517375051142791184>",
-		"<Qor>" -> "<:orangeq:485131801107365920>",
-		"<Rbr>" -> "<:brownrd:485131846070304769>",
-		"(Sbl)" -> "<:leffertsshuttle:485154824397127711>",
-		"(Sor)" -> "<:grandshuttle:485154824191737857>",
-		"(Syl)" -> "<:63shuttle:485154824455979018>",
+		"(MBR)" -> "<:brownm:517375051142791184>",
+		"<QOR>" -> "<:orangeq:485131801107365920>",
+		"<RBR>" -> "<:brownrd:485131846070304769>",
+		"(SBL)" -> "<:leffertsshuttle:485154824397127711>",
+		"(SOR)" -> "<:grandshuttle:485154824191737857>",
+		"(SYL)" -> "<:63shuttle:485154824455979018>",
 		"(H)" -> "<:H_Train:333805732568891392>",
 		"(HH)" -> "<:hhtrain:485147336843198485>",
 		"(K)" -> "<:K_Train:333805759508774912>",
@@ -183,11 +183,11 @@ object EmojiFilter {
 
 	def emojiSpeak(input: String): String = {
 		val (result, time) = Time {
-			val removedText = emojiRegex.replaceAllIn(input, "\0")
+			val removedText = emojiRegex.replaceAllIn(input, "\u0000")
 			val emoji = emojiRegex.findAllIn(input).toArray
 			val emojiText = removedText.map(c => if (c.isLetterOrDigit) emojiMap.getOrElse(c.toUpper, "🅱") else c.toString).mkString("\u200B")
 			var count = 0
-			emojiText.map(c => if (c == '\0') {
+			emojiText.map(c => if (c == '\u0000') {
 				val e = emoji(count); count += 1; e
 			} else c.toString).mkString
 		}
