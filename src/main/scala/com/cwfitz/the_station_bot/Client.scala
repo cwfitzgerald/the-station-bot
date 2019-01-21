@@ -14,10 +14,12 @@ import reactor.core.scala.publisher.Mono
 
 import scala.collection.mutable
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future, blocking}
+import scala.concurrent.{Await, ExecutionContext, blocking}
 import scala.language.postfixOps
 
 class Client (val client: DiscordClient) extends Actor {
+	implicit val ec: ExecutionContext = context.dispatcher
+
 	case class GuildInfo(prefix: String, defaultRole: Option[Long], adminRole: Long)
 	private val guildInfos = mutable.LongMap[GuildInfo]()
 
@@ -79,29 +81,40 @@ class Client (val client: DiscordClient) extends Actor {
 	}
 
 	private def messageReceived(e: MessageCreateEvent): Unit = {
+		logger.debug("Message received")
 		val message = e.getMessage.getContent.orElse("")
 		val guildID = e.getGuildId.get.asLong()
 		val guildSettings = guildInfos(guildID)
 		val prefix = guildSettings.prefix
-		if (message.startsWith(prefix)) {
+		if (message.startsWith(prefix)) ReportingFuture(logger) {
+			logger.debug("Processing as command")
+
 			val command = message.drop(prefix.length).takeWhile(_ != ' ').toLowerCase
 			val arg = message.dropWhile(_ != ' ').drop(1)
 
 			val member = e.getMember.get
 			val guild = e.getGuild.toScala
-			val adminRole = guild.flatMap(g => g.getRoleById(Snowflake.of(guildSettings.adminRole)).toScala)
-			val everyoneRole = guild.flatMap(g => g.getRoleById(Snowflake.of(guildID)).toScala)
+			val adminRole = guild.flatMap{_.getRoleById(Snowflake.of(guildSettings.adminRole)).toScala}
+			val adminRolePos = adminRole.flatMap{ _.getPosition.toScala }
+			val everyoneRole = guild.flatMap{_.getRoleById(Snowflake.of(guildID)).toScala}
 
-			member.getRoles.toScala.concatWith(everyoneRole)
+			member.getRoles.toScala
+				.startWith(everyoneRole)
+				.takeLast(1)
+				.map { r => logger.debug(s"Got role ${r.getName}"); r }
 				.flatMap(_.getPosition.toScala)
-				.zipSingle(adminRole.flatMap(_.getPosition.toScala))
-				.map{case(memberPos, adminPos) => memberPos >= adminPos}
+				.zipWith(adminRolePos)
+				.map { case (memberPos, adminPos) => memberPos >= adminPos }
 				.reduce(_ || _)
-    			.defaultIfEmpty(guildSettings.adminRole == guildID)
-    			.flatMap(isAdmin => e.getMessage.getAuthor.toScala.map(
-				    user => (isAdmin, user.getUsername)
-			    ))
-				.foreach{case (isAdmin, username) =>
+				.defaultIfEmpty(guildSettings.adminRole == guildID)
+				.flatMap { isAdmin =>
+					logger.debug("Getting author.");
+					e.getMessage.getAuthor.toScala.map {
+						user => logger.debug("Got author."); (isAdmin, user.getUsername)
+					}
+				}
+				.foreach { case (isAdmin, username) =>
+					logger.debug("Chain finished.")
 					if (isAdmin) {
 						dispatcher ! Client.DispatchCommandAdmin(command, MessageBundle(context.self, e, command, arg))
 						logger.info(s"""Command sent by admin $username. Name "$command". Args: "$arg"""")
@@ -111,11 +124,13 @@ class Client (val client: DiscordClient) extends Actor {
 						logger.info(s"""Command sent by user $username. Name "$command". Args: "$arg"""")
 					}
 				}
+
 		}
+		logger.debug("Message receive event processed.")
 	}
 
 	def run(): Unit = {
-		Future{ blocking { client.login().block() } }(ExecutionContext.global)
+		ReportingFuture(logger) { blocking { client.login().block() } }(ExecutionContext.global)
 	}
 
 	override def receive: Receive = {
@@ -166,6 +181,15 @@ class Client (val client: DiscordClient) extends Actor {
 				.update(roleID.getOrElse(0))
 			DBWrapper.database.run(query)
 			guildInfos.update(guildID, guildInfos(guildID).copy(defaultRole = roleID))
+		case Client.SetAdminRole(guildSnowflake, roleSnowflake) =>
+			val guildID = guildSnowflake.asLong()
+			val roleID = roleSnowflake.asLong()
+			val query = DBWrapper.guilds
+				.filter(_.id === guildSnowflake.asLong())
+				.map(_.adminRole)
+				.update(roleID)
+			DBWrapper.database.run(query)
+			guildInfos.update(guildID, guildInfos(guildID).copy(adminRole = roleID))
 	}
 }
 object Client {
@@ -181,7 +205,8 @@ object Client {
 	sealed case class SendCommand(guildID: Snowflake, channel: Mono[MessageChannel], text: String)
 	sealed case class Invalidate(replyChannel: Mono[MessageChannel])
 	sealed case class SetGuildPrefix(guildID: Snowflake, prefix: String)
-	sealed case class SetDefaultRole(guildId: Snowflake, roleId: Option[Snowflake])
+	sealed case class SetDefaultRole(guildId: Snowflake, roleID: Option[Snowflake])
+	sealed case class SetAdminRole(guildID: Snowflake, roleID: Snowflake)
 
 	def apply(actorSystem: ActorSystem, apiKey: String): ActorRef = {
 		val iClient = new DiscordClientBuilder(apiKey).build()

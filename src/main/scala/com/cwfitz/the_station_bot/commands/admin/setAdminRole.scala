@@ -1,12 +1,12 @@
 package com.cwfitz.the_station_bot.commands.admin
 
 import akka.actor.ActorRef
-import com.cwfitz.the_station_bot.Client.SetDefaultRole
+import com.cwfitz.the_station_bot.Client.SetAdminRole
 import com.cwfitz.the_station_bot.Command
 import com.cwfitz.the_station_bot.D4JImplicits._
 import discord4j.core.event.domain.message.MessageCreateEvent
 
-object setDefaultRole extends Command {
+object setAdminRole extends Command {
 	override def apply(client: ActorRef, e: MessageCreateEvent, command: String, args: String): Unit = {
 		val roleName = args.toUpperCase
 		val channel = e.getMessage.getChannel.toScala
@@ -14,9 +14,8 @@ object setDefaultRole extends Command {
 		val guildID = e.getGuildId.get
 		roleName.length match {
 			case 0 =>
-				client ! SetDefaultRole(guildID, None)
 				channel.flatMap {
-					c => c.createMessage(s"Removing default role.").toScala
+					c => c.createMessage(s"Must provide a role.").toScala
 				}.subscribe()
 			case _ => guild
 				.flatMapMany(_.getRoles.toScala)
@@ -24,8 +23,8 @@ object setDefaultRole extends Command {
 				.foreach { roles =>
 					val msg = roles.find(_.getName.toUpperCase == roleName) match {
 						case Some(role) =>
-							client ! SetDefaultRole(guildID, Some(role.getId))
-							s"Setting role ${role.getMention} as default."
+							client ! SetAdminRole(guildID, role.getId)
+							s"Setting role ${role.getMention} as admin."
 						case None =>
 							s"Unknown role $roleName."
 					}

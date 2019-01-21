@@ -26,11 +26,13 @@ object Main {
 		client ! Client.AddCommand("trainspeak", commands.emoji)
 		client ! Client.AddCommand("ll", commands.random)
 		client ! Client.AddCommand("speed", commands.speed)
+		client ! Client.AddCommand("status", commands.status)
 		client ! Client.AddCommandActor("ping", pinger)
 		client ! Client.AddCommandActor("pong", pinger)
 		client ! Client.AddAdminCommand("invalidate", commands.admin.invalidate)
 		client ! Client.AddAdminCommand("setprefix", commands.admin.setPrefix)
 		client ! Client.AddAdminCommand("setdefaultrole", commands.admin.setDefaultRole)
+		client ! Client.AddAdminCommand("setadminrole", commands.admin.setAdminRole)
 
 		client ! Client.Run
 	}

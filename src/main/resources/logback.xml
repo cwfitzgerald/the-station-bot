@@ -8,8 +8,7 @@
     <logger name="slick.jdbc.JdbcBackend.statement" level="DEBUG"/>
     <logger name="discord4j.core" level="INFO"/>
     <logger name="discord4j.gateway" level="INFO"/>
-    <logger name="discord4j.rest.http" level="INFO"/>
-    <logger name="discord4j.rest.request" level="DEBUG"/>
+    <logger name="discord4j.rest" level="DEBUG"/>
     <logger name="discord4j.dispatch" level="INFO"/>
     <logger name="discord4j.voice" level="INFO"/>
 
