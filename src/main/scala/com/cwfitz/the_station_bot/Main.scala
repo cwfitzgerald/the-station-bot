@@ -28,7 +28,9 @@ object Main {
 		client ! Client.AddCommand("speed", commands.speed)
 		client ! Client.AddCommandActor("ping", pinger)
 		client ! Client.AddCommandActor("pong", pinger)
-		client ! Client.AddAdminCommmand("setprefix", commands.admin.setPrefix)
+		client ! Client.AddAdminCommand("invalidate", commands.admin.invalidate)
+		client ! Client.AddAdminCommand("setprefix", commands.admin.setPrefix)
+		client ! Client.AddAdminCommand("setdefaultrole", commands.admin.setDefaultRole)
 
 		client ! Client.Run
 	}

@@ -62,7 +62,7 @@ class CommandDispatch extends Actor {
 			logger.info(s"Adding command $name")
 			commandMap += name -> action
 			commandNames += name
-		case Client.AddAdminCommmand(name, action) =>
+		case Client.AddAdminCommand(name, action) =>
 			logger.info(s"Adding admin command $name")
 			adminMap += name -> action
 		case Client.RemoveCommand(name) =>

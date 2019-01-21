@@ -6,7 +6,7 @@ import com.cwfitz.the_station_bot.database.DBWrapper
 import com.cwfitz.the_station_bot.database.PostgresProfile.api._
 import discord4j.core.`object`.entity.MessageChannel
 import discord4j.core.`object`.util.Snowflake
-import discord4j.core.event.domain.guild.{GuildCreateEvent, GuildDeleteEvent}
+import discord4j.core.event.domain.guild.{GuildCreateEvent, GuildDeleteEvent, MemberJoinEvent}
 import discord4j.core.event.domain.message.MessageCreateEvent
 import discord4j.core.{DiscordClient, DiscordClientBuilder}
 import org.slf4j.LoggerFactory
@@ -28,9 +28,7 @@ class Client (val client: DiscordClient) extends Actor {
 		(c: ActorRef, e: MessageCreateEvent, command: String, args: String) =>
 			actor ! MessageBundle(c, e, command, args)
 
-	private def guildCreated(e: GuildCreateEvent): Unit = {
-		val id = e.getGuild.getId.asLong
-
+	private def guildCreated(id: Long): Unit = {
 		val exp = DBWrapper.guilds
 			.filter(_.id === id)
 			.map(g => (g.commandPrefix, g.defaultRole, g.adminRole))
@@ -47,10 +45,37 @@ class Client (val client: DiscordClient) extends Actor {
 		guildInfos += id -> data
 	}
 
-	private def guildRemoved(e: GuildDeleteEvent): Unit = {
-		val id = e.getGuildId.asLong
+	private def refreshGuilds(replyChannel: Mono[MessageChannel]): Unit = {
+		val (guildCount, time) = Time {
+			val exp = DBWrapper.guilds
+				.map(g => (g.id, g.commandPrefix, g.defaultRole, g.adminRole))
+				.result
+			val v = Await.result(DBWrapper.database.run(exp), 1 second)
+			v.foreach { case (id, prefix, defaultRole, adminRole) =>
+				val data = GuildInfo(prefix, if (defaultRole == 0) None else Some(defaultRole), adminRole)
+				guildInfos += id -> data
+			}
+			v.size
+		}
+		replyChannel.flatMap {
+			c => c.createMessage(f"Refreshed $guildCount guilds in ${time / 1000000.0}%.2fms.").toScala
+		}.subscribe()
+	}
 
+	private def guildRemoved(id: Long): Unit = {
 		guildInfos.remove(id)
+	}
+
+	def memberAdded(e: MemberJoinEvent): Unit = {
+		val member = e.getMember
+		val defaultRole = guildInfos(e.getGuildId.asLong()).defaultRole
+		defaultRole match {
+			case Some(role) =>
+				logger.info(s"Member ${member.getNicknameMention} joined. Adding role $role.")
+				member.addRole(Snowflake.of(role)).subscribe()
+			case None =>
+				logger.info(s"Member ${member.getNicknameMention} joined. Default role disabled.")
+		}
 	}
 
 	private def messageReceived(e: MessageCreateEvent): Unit = {
@@ -96,10 +121,11 @@ class Client (val client: DiscordClient) extends Actor {
 	override def receive: Receive = {
 		case Client.Run => run()
 		case e: MessageCreateEvent => messageReceived(e)
-		case e: GuildCreateEvent => guildCreated(e)
-		case e: GuildDeleteEvent => guildRemoved(e)
+		case e: GuildCreateEvent => guildCreated(e.getGuild.getId.asLong)
+		case e: GuildDeleteEvent => guildRemoved(e.getGuildId.asLong)
+		case e: MemberJoinEvent => memberAdded(e)
 		case ac: Client.AddCommand => dispatcher ! ac
-		case adc: Client.AddAdminCommmand => dispatcher ! adc
+		case adc: Client.AddAdminCommand => dispatcher ! adc
 		case Client.AddCommandActor(name, actor) => dispatcher ! Client.AddCommand(name, akkaForward(actor))
 		case rc: Client.RemoveCommand => dispatcher ! rc
 		case Client.UnknownCommand(name, channel) =>
@@ -123,27 +149,39 @@ class Client (val client: DiscordClient) extends Actor {
 			channel.flatMap {
 				chan => chan.createMessage(s"$prefix$text").toScala
 			}.subscribe()
+		case Client.Invalidate(replyChannel) => refreshGuilds(replyChannel)
 		case Client.SetGuildPrefix(id, prefix) =>
 			val query = DBWrapper.guilds
 				.filter(_.id === id.asLong)
 				.map(_.commandPrefix)
 				.update(prefix)
 			DBWrapper.database.run(query)
-			guildInfos.update(id.asLong, guildInfos(id.asLong).copy(prefix))
+			guildInfos.update(id.asLong, guildInfos(id.asLong).copy(prefix = prefix))
+		case Client.SetDefaultRole(guildSnowflake, roleSnowflake) =>
+			val guildID = guildSnowflake.asLong()
+			val roleID = roleSnowflake.map(_.asLong())
+			val query = DBWrapper.guilds
+				.filter(_.id === guildSnowflake.asLong())
+				.map(_.defaultRole)
+				.update(roleID.getOrElse(0))
+			DBWrapper.database.run(query)
+			guildInfos.update(guildID, guildInfos(guildID).copy(defaultRole = roleID))
 	}
 }
 object Client {
 	case object Run
 	sealed case class AddCommand(name: String, action: Command)
-	sealed case class AddAdminCommmand(name: String, action: Command)
 	sealed case class AddCommandActor(name: String, actor: ActorRef)
+	sealed case class AddAdminCommand(name: String, action: Command)
 	sealed case class RemoveCommand(name: String)
 	sealed case class DispatchCommand(name: String, bundle: MessageBundle)
 	sealed case class DispatchCommandAdmin(name: String, bundle: MessageBundle)
 	sealed case class UnknownCommand(name: String, channel: Mono[MessageChannel])
 	sealed case class InsufficientPerms(name: String, channel: Mono[MessageChannel])
 	sealed case class SendCommand(guildID: Snowflake, channel: Mono[MessageChannel], text: String)
-	sealed case class SetGuildPrefix(id: Snowflake, prefix: String)
+	sealed case class Invalidate(replyChannel: Mono[MessageChannel])
+	sealed case class SetGuildPrefix(guildID: Snowflake, prefix: String)
+	sealed case class SetDefaultRole(guildId: Snowflake, roleId: Option[Snowflake])
 
 	def apply(actorSystem: ActorSystem, apiKey: String): ActorRef = {
 		val iClient = new DiscordClientBuilder(apiKey).build()
@@ -151,6 +189,7 @@ object Client {
 		iClient.getEventDispatcher.on(classOf[MessageCreateEvent]).subscribe(client ! _)
 		iClient.getEventDispatcher.on(classOf[GuildCreateEvent]).subscribe(client ! _)
 		iClient.getEventDispatcher.on(classOf[GuildDeleteEvent]).subscribe(client ! _)
+		iClient.getEventDispatcher.on(classOf[MemberJoinEvent]).subscribe(client ! _)
 		client
 	}
 }
