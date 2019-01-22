@@ -20,9 +20,9 @@ object status extends Command {
 
 		val uptime = Duration.ofMillis(runtimeBean.getUptime)
 		val days = uptime.toDays
-		val hours = uptime.toHours
-		val minutes = uptime.toMinutes
-		val seconds = uptime.getSeconds
+		val hours = uptime.toHours % 24
+		val minutes = uptime.toMinutes % 60
+		val seconds = uptime.getSeconds % 60
 		val mills = uptime.toMillis % 1000
 
 		val processors = runtime.availableProcessors()
