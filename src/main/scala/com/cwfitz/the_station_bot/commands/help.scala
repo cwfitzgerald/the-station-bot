@@ -16,6 +16,7 @@ object help extends Command {
 		.setDescription("Help page for The Station's Bot.")
 		.addField("!help <module>", "View help on a specific command. Modules: `help`, `speed`, `emoji`, `trainspeak`.", false)
 		.addField("!ping", "View bot ping time.", false)
+		.addField("!status", "View bot status.", false)
 		.addField("!set/add <roles>", "add <roles> to your user separated by commas or spaces", false)
 		.addField("!rem/remove <roles>", "remove <roles> from your user separated by commas or spaces", false)
 		.addField("!speed", "Calculate speed of a train based on its length and the time it takes to cross a single point. `!help speed` for more.", false)
