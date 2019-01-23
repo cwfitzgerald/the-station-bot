@@ -81,6 +81,14 @@ class Client (val client: DiscordClient) extends Actor {
 	}
 
 	private def messageReceived(e: MessageCreateEvent): Unit = {
+		if (e.getGuildId.toScala.isEmpty) {
+			if (e.getMessage.getAuthorId != client.getSelfId) {
+				e.getMessage.getChannel.toScala.flatMap {
+					_.createMessage("Fuckoff m8. Luv U").toScala
+				}.subscribe()
+			}
+			return
+		}
 		logger.debug("Message received")
 		val message = e.getMessage.getContent.orElse("")
 		val guildID = e.getGuildId.get.asLong()
