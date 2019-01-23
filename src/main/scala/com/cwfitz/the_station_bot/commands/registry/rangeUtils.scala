@@ -34,17 +34,20 @@ object rangeUtils {
 		}
 	}
 
+	def pairToString(pair: (Int, Int)) = s"${pair._1}-${pair._2}"
+
 	def normalize(carType: String): Unit = {
 		logger.info(s"Normalizing $carType.")
 		val readQuery = DBWrapper.carNumbers
-    		.filter(_.carTypeName === carType)
+    		.filter(_.carType === carType)
     		.map(_.number)
+    		.sorted
     		.result
 		DBWrapper.database.run(readQuery).onComplete { t1 => t1.toEither match {
 			case Right(result) =>
 				logger.info(s"Got ${result.length} $carType cars.")
 				val pairs = extractPairs(result.toList)
-    				.map{case(left, right) => f"$left%04d-$right%04d"}
+    				.map(pairToString)
 				val writeQuery = DBWrapper.carTypes
     				.filter(_.carType === carType)
     				.map(_.numberRanges)

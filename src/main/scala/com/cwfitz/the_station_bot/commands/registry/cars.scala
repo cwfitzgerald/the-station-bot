@@ -14,7 +14,7 @@ import scala.concurrent.ExecutionContext.Implicits._
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
-object addCars extends Command {
+object cars extends Command {
 	private def carExists(carType: String): Future[Boolean] = {
 		val query = DBWrapper.carTypes
     		.filter(_.carType === carType)
@@ -24,7 +24,9 @@ object addCars extends Command {
 	}
 
 	private def addCars(channel: Mono[MessageChannel], carType: String, numbers: Seq[Int]): Unit = {
-		val update = DBWrapper.carNumbers.insertOrUpdateAll(numbers.map((0, _, carType, Nil, Nil)))
+		val update = DBWrapper.carNumbers
+			.map(c => (c.system, c.number, c.carType))
+			.insertOrUpdateAll(numbers.map((0, _, carType)))
 
 		DBWrapper.database.run(update).onComplete { t => t.toEither match {
 			case Right(Some(value)) =>
@@ -45,7 +47,7 @@ object addCars extends Command {
 		}}
 	}
 	private def removeCars(channel: Mono[MessageChannel], carType: String, numbers: Seq[(Int, Int)]): Unit = {
-		val operations = numbers.map{case (nStart, nEnd) => DBWrapper.carNumbers.filter(car => car.number >= nStart && car.number <= nEnd && car.carTypeName === carType).delete}
+		val operations = numbers.map{case (nStart, nEnd) => DBWrapper.carNumbers.filter(car => car.number >= nStart && car.number <= nEnd && car.carType === carType).delete}
 		val removal = DBIO.sequence(operations)
 
 		DBWrapper.database.run(removal).onComplete { t => t.toEither match {
