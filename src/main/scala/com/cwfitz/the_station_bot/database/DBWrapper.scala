@@ -55,10 +55,7 @@ object DBWrapper {
 			sess
 		})
 
-		val username = sys.env("CWF_USER")
-		val password = sys.env("CWF_PASS")
-
-		val database = Database.forURL(s"jdbc:postgresql://localhost:5432/the_station_bot?user=$username&password=$password")
+		val database = Database.forConfig("centralDB")
 		(sshSession, database)
 	}
 }
