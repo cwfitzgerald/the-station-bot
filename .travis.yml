@@ -4,3 +4,6 @@ scala:
   - 2.12.8
 script:
   - sbt assembly
+cache:
+  directories:
+    - $HOME/.ivy2/cache/
