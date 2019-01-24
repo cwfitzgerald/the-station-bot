@@ -10,7 +10,7 @@ object inviteMe extends Command {
 		e.getMessage.getChannel.toScala.flatMap {
 			_.createMessage(
 				"""To invite me to your server, use this link:
-				  |https://discordapp.com/api/oauth2/authorize?client_id=519701708851511306&permissions=469888000&scope=bot""".stripMargin
+				  |<https://discordapp.com/api/oauth2/authorize?client_id=519701708851511306&permissions=469888000&scope=bot>""".stripMargin
 			).toScala
 		}.subscribe()
 	}
