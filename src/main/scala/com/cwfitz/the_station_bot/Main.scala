@@ -17,6 +17,7 @@ object Main {
 
 		client ! ("", commands.empty)
 		client ! Client.AddCommand("help", commands.help)
+		client ! Client.AddCommand("inviteme", commands.inviteMe)
 		client ! Client.AddCommand("add", commands.roles.add)
 		client ! Client.AddCommand("set", commands.roles.add)
 		client ! Client.AddCommand("rem", commands.roles.remove)
