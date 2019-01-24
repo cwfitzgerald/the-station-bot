@@ -1,10 +1,23 @@
 dist: xenial
 language: scala
 scala:
-  - 2.12.8
+- 2.12.8
 script:
-  - sbt compile assembly
+- sbt compile assembly
 cache:
   directories:
-    - $HOME/.ivy2/
-    - $HOME/.sbt/
+  - "$HOME/.ivy2/"
+  - "$HOME/.sbt/"
+addons:
+  ssh_known_hosts: cwfitz.com
+before_deploy:
+  - openssl aes-256-cbc -K $encrypted_04be697d0b1a_key -iv $encrypted_04be697d0b1a_iv -in $TRAVIS_BUILD_DIR/.travis-ci/deploy-rsa.enc -out /tmp/deploy-rsa -d
+  - eval "$(ssh-agent -s)"
+  - chmod 600 /tmp/deploy-rsa
+  - ssh-add /tmp/deploy-rsa
+deploy:
+  provider: script
+  skip_cleanup: true
+  script: rsync -az --progress $TRAVIS_BUILD_DIR/target/scala-2.12/the-station-bot.jar connor@cwfitz.com:$DEPLOY_LOCATION
+  on:
+    branch: master
