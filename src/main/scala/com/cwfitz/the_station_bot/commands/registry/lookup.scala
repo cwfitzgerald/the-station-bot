@@ -212,10 +212,17 @@ object lookup extends Command{
 			.filter(_.carType === carType)
 	}
 	private val SQLDisplayCarType = Compiled(SQLDisplayCarTypeFunc _)
+	private def SQLCountCarsOfTypeFunc(carType: Rep[String]) = {
+		DBWrapper.carNumbers
+    		.filter(_.carType === carType)
+    		.length
+	}
+	private val SQLCountCarsOfType = Compiled(SQLCountCarsOfTypeFunc _)
 
 	private def displayCarType(channel: Mono[MessageChannel], carType: String): Unit = {
-		DBWrapper.database.run(SQLDisplayCarType(carType).result).onComplete {
-			case Success(list) if list.nonEmpty =>
+		val q = SQLDisplayCarType(carType).result zip SQLCountCarsOfType(carType).result
+		DBWrapper.database.run(q).onComplete {
+			case Success((list, count)) if list.nonEmpty =>
 				val (_, numberRanges, manufacturer, length, width, height, yearsBuilt, comments, _) = list.head
 				val commentTitle = comments match {
 					case Some(commentArray) =>
@@ -233,6 +240,7 @@ object lookup extends Command{
 					.setAuthor("Andrew Cuomo", null, "https://cwfitz.com/s/_qaqGg.jpg")
 					.setTitle(carType)
 					.addField("Numbers:", numberRanges.mkString("\n"), true)
+    				.addField("Count:", count.toString, true)
 					.addField("Manufacturer:", manufacturer, true)
 					.addField("Dimensions:", f"$length%.1fx$width%.1fx$height%.1fft", true)
 					.addField("Year(s) Built", yearsBuilt, true)
@@ -243,6 +251,13 @@ object lookup extends Command{
 					//noinspection ConvertibleToMethodValue
 					_.createMessage(m => m.setEmbed(carTypeEmbed(_))).toScala
 				}.subscribe()
+
+			case Success(_) =>
+				channel.flatMap {
+					//noinspection ConvertibleToMethodValue
+					_.createMessage(s"Car type not found.").toScala
+				}.subscribe()
+
 			case Failure(exception) =>
 				logger.warn("Exception thrown when accessing car type information: ", exception)
 				channel.flatMap {
