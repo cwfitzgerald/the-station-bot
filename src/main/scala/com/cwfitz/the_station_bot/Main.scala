@@ -40,5 +40,6 @@ object Main {
 		client ! Client.AddAdminCommand("setadminrole", commands.admin.setAdminRole)
 
 		client ! Client.Run
+		
 	}
 }
