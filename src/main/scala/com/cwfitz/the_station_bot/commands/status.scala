@@ -4,7 +4,7 @@ import java.lang.management.ManagementFactory
 import java.time.Duration
 
 import akka.actor.ActorRef
-import com.cwfitz.the_station_bot.Command
+import com.cwfitz.the_station_bot.{ArgParser, Command}
 import com.cwfitz.the_station_bot.D4JImplicits._
 import com.sun.management.OperatingSystemMXBean
 import discord4j.core.event.domain.message.MessageCreateEvent
@@ -12,7 +12,7 @@ import discord4j.core.spec.EmbedCreateSpec
 import discord4j.core.util.VersionUtil
 
 object status extends Command {
-	override def apply(client: ActorRef, e: MessageCreateEvent, command: String, args: String): Unit = {
+	override def apply(client: ActorRef, e: MessageCreateEvent, command: String, args: ArgParser.Argument): Unit = {
 		val version = VersionUtil.getProperties.getProperty(VersionUtil.GIT_COMMIT_ID_ABBREV)
 		val osBean = ManagementFactory.getOperatingSystemMXBean.asInstanceOf[OperatingSystemMXBean]
 		val runtimeBean = ManagementFactory.getRuntimeMXBean

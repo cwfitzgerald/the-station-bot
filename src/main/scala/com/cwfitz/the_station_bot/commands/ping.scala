@@ -5,7 +5,7 @@ import java.time.temporal.ChronoUnit
 
 import akka.actor.{Actor, ActorRef}
 import com.cwfitz.the_station_bot.D4JImplicits._
-import com.cwfitz.the_station_bot.{Client, MessageBundle}
+import com.cwfitz.the_station_bot.{ArgParser, Client, MessageBundle}
 import discord4j.core.`object`.util.Snowflake
 import discord4j.core.event.domain.message.MessageCreateEvent
 import org.slf4j.LoggerFactory
@@ -16,7 +16,7 @@ class ping extends Actor {
 	private val logger = LoggerFactory.getLogger(getClass)
 	var pingMap: mutable.HashMap[Snowflake, Instant] = mutable.HashMap[Snowflake, Instant]()
 
-	def handle(c: ActorRef, e: MessageCreateEvent, command: String, args: String): Unit = {
+	def handle(c: ActorRef, e: MessageCreateEvent, command: String, args: ArgParser.Argument): Unit = {
 		val message = e.getMessage
 		pingMap.get(message.getChannelId) match {
 			case Some(timestamp) =>

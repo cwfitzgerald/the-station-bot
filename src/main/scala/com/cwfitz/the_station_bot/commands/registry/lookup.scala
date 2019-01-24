@@ -1,7 +1,7 @@
 package com.cwfitz.the_station_bot.commands.registry
 
 import akka.actor.ActorRef
-import com.cwfitz.the_station_bot.Command
+import com.cwfitz.the_station_bot.{ArgParser, Command}
 import com.cwfitz.the_station_bot.D4JImplicits._
 import com.cwfitz.the_station_bot.database.DBWrapper
 import com.cwfitz.the_station_bot.database.PostgresProfile.api._
@@ -18,15 +18,18 @@ import scala.util.{Failure, Success}
 object lookup extends Command{
 	private val logger = LoggerFactory.getLogger(getClass)
 
-	private def displaySingleCar(channel: Mono[MessageChannel], carNumber: Int): Unit = {
-		logger.info(s"Getting $carNumber's information")
-		val q = DBWrapper.carNumbers
+	private def SQLDisplaySingleCarFunc(carNumber: Rep[Int]) = {
+		DBWrapper.carNumbers
 			.filter(c => c.system === 0 && c.number === carNumber)
 			.join(DBWrapper.carTypes)
-    		.filter{case (car, carTypes) => car.carType === carTypes.carType}
+			.filter{case (car, carTypes) => car.carType === carTypes.carType}
 			.map{case (car, carTypes) => (car.carType, carTypes.manufacturer, carTypes.yearsBuilt, car.comments, car.images)}
-    		.result
-		DBWrapper.database.run(q).onComplete {
+	}
+	private val SQLDisplaySingleCar = Compiled(SQLDisplaySingleCarFunc _)
+
+	private def displaySingleCar(channel: Mono[MessageChannel], carNumber: Int): Unit = {
+		logger.info(s"Getting $carNumber's information")
+		DBWrapper.database.run(SQLDisplaySingleCar(carNumber).result).onComplete {
 			case Success(carSeq) if carSeq.nonEmpty =>
 				val (carType, manufacturer, yearsBuilt, comments, _) = carSeq.head
 				val commentTitle = comments match {
@@ -43,7 +46,7 @@ object lookup extends Command{
 
 				def singleCarEmbed(embed: EmbedCreateSpec): Unit = embed
 					.setAuthor("Andrew Cuomo", null, "https://cwfitz.com/s/_qaqGg.jpg")
-					.setTitle(carNumber.toString)
+					.setTitle(s"Car #$carNumber")
 					.addField("Type", carType, true)
 					.addField("Manufacturer", manufacturer, true)
 					.addField("Year(s) Built", yearsBuilt, true)
@@ -54,7 +57,7 @@ object lookup extends Command{
 					//noinspection ConvertibleToMethodValue
 					_.createMessage(m => m.setEmbed(singleCarEmbed(_))).toScala
 				}.subscribe()
-			case Success(carSeq) =>
+			case Success(_) =>
 				channel.flatMap {
 					//noinspection ConvertibleToMethodValue
 					_.createMessage(s"Car $carNumber not found.").toScala
@@ -99,19 +102,70 @@ object lookup extends Command{
 		}).reverse
 	}
 
+	private def SQLDisplayMultipleCarsFunc1(start: Rep[Int], end: Rep[Int]) = {
+		DBWrapper.carNumbers
+			.filter { car => car.number >= start && car.number <= end}
+			.join(DBWrapper.carTypes)
+			.filter{ case(car, carType) => car.carType === carType.carType }
+			.map{ case(car, carType) => (car.number, car.carType, carType.manufacturer) }
+	}
+	private def SQLDisplayMultipleCarsFunc2(start1: Rep[Int], end1: Rep[Int],
+	                                        start2: Rep[Int], end2: Rep[Int]) = {
+		DBWrapper.carNumbers
+			.filter { car =>
+				car.number >= start1 && car.number <= end1 ||
+					car.number >= start2 && car.number <= end2
+			}
+			.join(DBWrapper.carTypes)
+			.filter{ case(car, carType) => car.carType === carType.carType }
+			.map{ case(car, carType) => (car.number, car.carType, carType.manufacturer) }
+	}
+	private def SQLDisplayMultipleCarsFunc3(start1: Rep[Int], end1: Rep[Int],
+	                                        start2: Rep[Int], end2: Rep[Int],
+	                                        start3: Rep[Int], end3: Rep[Int]) = {
+		DBWrapper.carNumbers
+			.filter { car =>
+				car.number >= start1 && car.number <= end1 ||
+					car.number >= start2 && car.number <= end2 ||
+					car.number >= start3 && car.number <= end3
+			}
+			.join(DBWrapper.carTypes)
+			.filter{ case(car, carType) => car.carType === carType.carType }
+			.map{ case(car, carType) => (car.number, car.carType, carType.manufacturer) }
+	}
+	private val SQLDisplayMultipleCars1 = Compiled(SQLDisplayMultipleCarsFunc1 _)
+	private val SQLDisplayMultipleCars2 = Compiled(SQLDisplayMultipleCarsFunc2 _)
+	private val SQLDisplayMultipleCars3 = Compiled(SQLDisplayMultipleCarsFunc3 _)
+
+	private def displayMultipleCarsQuery(carPairs: Seq[(Int, Int)]) = {
+		carPairs.length match {
+			case 1 => SQLDisplayMultipleCars1(carPairs.head._1, carPairs.head._2).result
+			case 2 => SQLDisplayMultipleCars2(
+				carPairs.head._1, carPairs.head._2,
+				carPairs(1)._1, carPairs(1)._2,
+			).result
+			case 3 => SQLDisplayMultipleCars3(
+				carPairs.head._1, carPairs.head._2,
+				carPairs(1)._1, carPairs(1)._2,
+				carPairs(2)._1, carPairs(2)._2,
+			).result
+			case _ =>
+				DBWrapper.carNumbers
+					.filter {
+						car => carPairs
+							.map{case(start, end) => car.number >= start && car.number <= end}
+							.reduceLeft(_ || _)
+					}
+					.join(DBWrapper.carTypes)
+					.filter{ case(car, carType) => car.carType === carType.carType }
+					.map{ case(car, carType) => (car.number, car.carType, carType.manufacturer) }
+					.result
+		}
+	}
+
 	private def displayMultipleCars(channel: Mono[MessageChannel], carPairs: Seq[(Int, Int)]): Unit = {
 		logger.info("Getting multicar information")
-		val q = DBWrapper.carNumbers
-    		.filter {
-			    car => carPairs
-				    .map{case(start, end) => car.number >= start && car.number <= end}
-				    .reduceLeft(_ || _)
-		    }
-    		.join(DBWrapper.carTypes)
-    		.filter{ case(car, carType) => car.carType === carType.carType }
-    		.map{ case(car, carType) => (car.number, car.carType, carType.manufacturer) }
-    		.result
-		DBWrapper.database.run(q).onComplete {
+		DBWrapper.database.run(displayMultipleCarsQuery(carPairs)).onComplete {
 			case Success(carSeq) if carSeq.nonEmpty  =>
 				val sorted = carSeq.sorted.toList
 				val carInfo = extractCarInfo(sorted)
@@ -153,11 +207,14 @@ object lookup extends Command{
 		}
 	}
 
+	private def SQLDisplayCarTypeFunc(carType: Rep[String]) = {
+		DBWrapper.carTypes
+			.filter(_.carType === carType)
+	}
+	private val SQLDisplayCarType = Compiled(SQLDisplayCarTypeFunc _)
+
 	private def displayCarType(channel: Mono[MessageChannel], carType: String): Unit = {
-		val q = DBWrapper.carTypes
-    		.filter(_.carType === carType)
-    		.result
-		DBWrapper.database.run(q).onComplete {
+		DBWrapper.database.run(SQLDisplayCarType(carType).result).onComplete {
 			case Success(list) if list.nonEmpty =>
 				val (_, numberRanges, manufacturer, length, width, height, yearsBuilt, comments, _) = list.head
 				val commentTitle = comments match {
@@ -194,17 +251,21 @@ object lookup extends Command{
 		}
 	}
 
-	override def apply(client: ActorRef, e: MessageCreateEvent, command: String, args: String): Unit = {
-		val arguments = args.split(" ")
+	private def SQLCarTypeExistsFunc(name: Rep[String]) = {
+		DBWrapper.carTypes
+			.filter(_.carType === name)
+			.exists
+	}
+	private val SQLCarTypeExists = Compiled(SQLCarTypeExistsFunc _)
+
+	override def apply(client: ActorRef, e: MessageCreateEvent, command: String, args: ArgParser.Argument): Unit = {
+		val arguments = args.argv
 		val argument = arguments.headOption
 		val channel = e.getMessage.getChannel.toScala
 		argument match {
 			case Some(name) =>
 				// First search for car type
-				val q = DBWrapper.carTypes
-					.filter(_.carType === name)
-    				.exists
-					.result
+				val q = SQLCarTypeExists(name).result
 				DBWrapper.database.run(q).onComplete {
 					// Is a car type
 					case Success(true) =>

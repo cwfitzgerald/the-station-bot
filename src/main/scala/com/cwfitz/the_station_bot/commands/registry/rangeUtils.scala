@@ -34,24 +34,33 @@ object rangeUtils {
 		}
 	}
 
-	def pairToString(pair: (Int, Int)) = s"${pair._1}-${pair._2}"
+	def pairToString(pair: (Int, Int)): String = pair match {
+		case (left, right) => if (left == right) left.toString else s"$left-$right"
+	}
+
+	private def SQLNormalizeReadFunc(carType: Rep[String]) = {
+		DBWrapper.carNumbers
+			.filter(_.carType === carType)
+			.map(_.number)
+			.sorted
+	}
+	private def SQLNormalizeWriteFunc(carType: Rep[String]) = {
+		DBWrapper.carTypes
+			.filter(_.carType === carType)
+			.map(_.numberRanges)
+	}
+	private val SQLNormalizeRead = Compiled(SQLNormalizeReadFunc _)
+	private val SQLNormalizeWrite = Compiled(SQLNormalizeWriteFunc _)
 
 	def normalize(carType: String): Unit = {
 		logger.info(s"Normalizing $carType.")
-		val readQuery = DBWrapper.carNumbers
-    		.filter(_.carType === carType)
-    		.map(_.number)
-    		.sorted
-    		.result
+		val readQuery = SQLNormalizeRead(carType).result
 		DBWrapper.database.run(readQuery).onComplete { t1 => t1.toEither match {
 			case Right(result) =>
 				logger.info(s"Got ${result.length} $carType cars.")
 				val pairs = extractPairs(result.toList)
     				.map(pairToString)
-				val writeQuery = DBWrapper.carTypes
-    				.filter(_.carType === carType)
-    				.map(_.numberRanges)
-    				.update(pairs)
+				val writeQuery = SQLNormalizeWrite(carType).update(pairs)
 				DBWrapper.database.run(writeQuery).onComplete{ t2 => t2.toEither match {
 					case Right(_) =>
 						logger.info(s"Normalized $carType with ${pairs.length} ranges.")
@@ -63,17 +72,19 @@ object rangeUtils {
 		}}
 	}
 
+	private val SQLGetAllTypes =
+		DBWrapper.carTypes
+			.map(_.carType)
+    	    .result
+
 	def normalizeAll(): Unit = {
-		val query = DBWrapper.carTypes
-    		.map(_.carType)
-    		.result
-		DBWrapper.database.run(query).onComplete { t => t.toEither match {
+		DBWrapper.database.run(SQLGetAllTypes).onComplete { t => t.toEither match {
 			case Right(types) => types.foreach(normalize)
 			case Left(exception) => logger.warn("Exception when pulling in car types: ", exception)
 		}}
 	}
 
-	private def parseRangeImpl[_: P] = P( CharIn("0-9").rep(min = 1, max = 4).! ~ ("-" ~ CharIn("0-9").rep(min = 1, max = 4).! ).? ~ End )
+	private def parseRangeImpl[_: P] = P( CharIn("0-9").rep(min = 1, max = 4).! ~ (CharIn("\\-–") ~ CharIn("0-9").rep(min = 1, max = 4).! ).? ~ End )
     	.map{
 		    case(left, right) =>
 			    val leftNum = left.toInt

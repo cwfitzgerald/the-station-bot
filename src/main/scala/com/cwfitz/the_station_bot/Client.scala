@@ -27,15 +27,18 @@ class Client (val client: DiscordClient) extends Actor {
 	private val dispatcher = context.actorOf(Props[CommandDispatch], "dispatcher")
 
 	private def akkaForward(actor: ActorRef) =
-		(c: ActorRef, e: MessageCreateEvent, command: String, args: String) =>
+		(c: ActorRef, e: MessageCreateEvent, command: String, args: ArgParser.Argument) =>
 			actor ! MessageBundle(c, e, command, args)
 
-	private def guildCreated(id: Long): Unit = {
-		val exp = DBWrapper.guilds
+	private def SQLGuildLookupFunc(id: Rep[Long]) = {
+		DBWrapper.guilds
 			.filter(_.id === id)
 			.map(g => (g.commandPrefix, g.defaultRole, g.adminRole))
-			.result
-		val v = Await.result(DBWrapper.database.run(exp), 1 second).headOption
+	}
+	private val SQLGuildLookup = Compiled(SQLGuildLookupFunc _)
+
+	private def guildCreated(id: Long): Unit = {
+		val v = Await.result(DBWrapper.database.run(SQLGuildLookup(id).result), 1 second).headOption
 		val data = v match {
 			case Some((prefix, defaultRole, adminRole)) =>
 				GuildInfo(prefix, if(defaultRole == 0) None else Some(defaultRole), adminRole)
@@ -47,12 +50,15 @@ class Client (val client: DiscordClient) extends Actor {
 		guildInfos += id -> data
 	}
 
+	private def SQLGuildListFunc() = {
+		DBWrapper.guilds
+			.map(g => (g.id, g.commandPrefix, g.defaultRole, g.adminRole))
+	}
+	private val SQLGuildList = SQLGuildListFunc().result
+
 	private def refreshGuilds(replyChannel: Mono[MessageChannel]): Unit = {
 		val (guildCount, time) = Time {
-			val exp = DBWrapper.guilds
-				.map(g => (g.id, g.commandPrefix, g.defaultRole, g.adminRole))
-				.result
-			val v = Await.result(DBWrapper.database.run(exp), 1 second)
+			val v = Await.result(DBWrapper.database.run(SQLGuildList), 1 second)
 			v.foreach { case (id, prefix, defaultRole, adminRole) =>
 				val data = GuildInfo(prefix, if (defaultRole == 0) None else Some(defaultRole), adminRole)
 				guildInfos += id -> data
@@ -98,7 +104,7 @@ class Client (val client: DiscordClient) extends Actor {
 			logger.debug("Processing as command")
 
 			val command = message.drop(prefix.length).takeWhile(_ != ' ').toLowerCase
-			val arg = message.dropWhile(_ != ' ').drop(1)
+			val arg = ArgParser(message.dropWhile(_ != ' '))
 
 			val member = e.getMember.get
 			val guild = e.getGuild.toScala
@@ -125,12 +131,12 @@ class Client (val client: DiscordClient) extends Actor {
 					logger.debug("Chain finished.")
 					if (isAdmin) {
 						dispatcher ! Client.DispatchCommandAdmin(command, MessageBundle(context.self, e, command, arg))
-						logger.info(s"""Command sent by admin $username. Name "$command". Args: "$arg"""")
 					}
 					else {
 						dispatcher ! Client.DispatchCommand(command, MessageBundle(context.self, e, command, arg))
-						logger.info(s"""Command sent by user $username. Name "$command". Args: "$arg"""")
 					}
+					val adminText = if(isAdmin) "admin" else "user"
+					logger.info(s"""Command sent by $adminText $username. Name "$command". Arg text: "${arg.fullText}". Split into ${arg.argc}: "${arg.argv.mkString("\", \"")}".""")
 				}
 
 		}
@@ -140,6 +146,27 @@ class Client (val client: DiscordClient) extends Actor {
 	def run(): Unit = {
 		ReportingFuture(logger) { blocking { client.login().block() } }(ExecutionContext.global)
 	}
+
+	private def SQLSetGuildPrefixFunc(id: Rep[Long]) = {
+		DBWrapper.guilds
+			.filter(_.id === id)
+			.map(_.commandPrefix)
+	}
+	private val SQLSetGuildPrefix = Compiled(SQLSetGuildPrefixFunc _)
+
+	private def SQLSetGuildDefaultRoleFunc(id: Rep[Long]) = {
+		DBWrapper.guilds
+			.filter(_.id === id)
+			.map(_.defaultRole)
+	}
+	private val SQLSetGuildDefaultRole = Compiled(SQLSetGuildDefaultRoleFunc _)
+
+	private def SQLSetGuildAdminRoleFunc(id: Rep[Long]) = {
+		DBWrapper.guilds
+			.filter(_.id === id)
+			.map(_.adminRole)
+	}
+	private val SQLSetGuildAdminRole = Compiled(SQLSetGuildAdminRoleFunc _)
 
 	override def receive: Receive = {
 		case Client.Run => run()
@@ -159,6 +186,7 @@ class Client (val client: DiscordClient) extends Actor {
 						chan => chan.createMessage (s"Unknown command `$name`. Use `!help` to see all commands.").toScala
 					).subscribe()
 			}
+
 		case Client.InsufficientPerms(name, channel) =>
 			name.length match {
 				case 0 =>
@@ -167,36 +195,31 @@ class Client (val client: DiscordClient) extends Actor {
 						chan => chan.createMessage (s"Command `$name` is for admins only. You ain't that!").toScala
 					).subscribe()
 			}
+
 		case Client.SendCommand(guild, channel, text) =>
 			val prefix = guildInfos(guild.asLong).prefix
 			channel.flatMap {
 				chan => chan.createMessage(s"$prefix$text").toScala
 			}.subscribe()
-		case Client.Invalidate(replyChannel) => refreshGuilds(replyChannel)
+
+		case Client.Invalidate(replyChannel) =>
+			refreshGuilds(replyChannel)
+			commands.registry.rangeUtils.normalizeAll()
+
 		case Client.SetGuildPrefix(id, prefix) =>
-			val query = DBWrapper.guilds
-				.filter(_.id === id.asLong)
-				.map(_.commandPrefix)
-				.update(prefix)
-			DBWrapper.database.run(query)
+			DBWrapper.database.run(SQLSetGuildPrefix(id.asLong()).update(prefix))
 			guildInfos.update(id.asLong, guildInfos(id.asLong).copy(prefix = prefix))
+
 		case Client.SetDefaultRole(guildSnowflake, roleSnowflake) =>
 			val guildID = guildSnowflake.asLong()
 			val roleID = roleSnowflake.map(_.asLong())
-			val query = DBWrapper.guilds
-				.filter(_.id === guildSnowflake.asLong())
-				.map(_.defaultRole)
-				.update(roleID.getOrElse(0))
-			DBWrapper.database.run(query)
+			DBWrapper.database.run(SQLSetGuildDefaultRole(guildID).update(roleID.getOrElse(0)))
 			guildInfos.update(guildID, guildInfos(guildID).copy(defaultRole = roleID))
+
 		case Client.SetAdminRole(guildSnowflake, roleSnowflake) =>
 			val guildID = guildSnowflake.asLong()
 			val roleID = roleSnowflake.asLong()
-			val query = DBWrapper.guilds
-				.filter(_.id === guildSnowflake.asLong())
-				.map(_.adminRole)
-				.update(roleID)
-			DBWrapper.database.run(query)
+			DBWrapper.database.run(SQLSetGuildAdminRole(guildID).update(roleID))
 			guildInfos.update(guildID, guildInfos(guildID).copy(adminRole = roleID))
 	}
 }

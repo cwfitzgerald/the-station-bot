@@ -1,7 +1,7 @@
 package com.cwfitz.the_station_bot.commands.registry
 
 import akka.actor.ActorRef
-import com.cwfitz.the_station_bot.Command
+import com.cwfitz.the_station_bot.{ArgParser, Command}
 import com.cwfitz.the_station_bot.D4JImplicits._
 import com.cwfitz.the_station_bot.database.DBWrapper
 import com.cwfitz.the_station_bot.database.PostgresProfile.api._
@@ -15,12 +15,15 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
 object cars extends Command {
+	private def SQLCarExistsFunc(carType: Rep[String]) = {
+		DBWrapper.carTypes
+			.filter(_.carType === carType)
+			.exists
+	}
+	private val SQLCarExists = Compiled(SQLCarExistsFunc _)
+
 	private def carExists(carType: String): Future[Boolean] = {
-		val query = DBWrapper.carTypes
-    		.filter(_.carType === carType)
-    		.exists
-			.result
-		DBWrapper.database.run(query)
+		DBWrapper.database.run(SQLCarExists(carType).result)
 	}
 
 	private def addCars(channel: Mono[MessageChannel], carType: String, numbers: Seq[Int]): Unit = {
@@ -46,8 +49,15 @@ object cars extends Command {
 			case Left(exception) => logger.warn("Exception while adding cars: ", exception)
 		}}
 	}
+
+	private def SQLRemoveCarsFunc(carType: Rep[String], nStart: Rep[Int], nEnd: Rep[Int]) = {
+		DBWrapper.carNumbers
+			.filter(car => car.number >= nStart && car.number <= nEnd && car.carType === carType)
+	}
+	private val SQLRemoveCars = Compiled(SQLRemoveCarsFunc _)
+
 	private def removeCars(channel: Mono[MessageChannel], carType: String, numbers: Seq[(Int, Int)]): Unit = {
-		val operations = numbers.map{case (nStart, nEnd) => DBWrapper.carNumbers.filter(car => car.number >= nStart && car.number <= nEnd && car.carType === carType).delete}
+		val operations = numbers.map{case (nStart, nEnd) => SQLRemoveCars(carType, nStart, nEnd).delete}
 		val removal = DBIO.sequence(operations)
 
 		DBWrapper.database.run(removal).onComplete { t => t.toEither match {
@@ -63,13 +73,13 @@ object cars extends Command {
 	}
 
 	private val logger = LoggerFactory.getLogger(getClass)
-	override def apply(client: ActorRef, e: MessageCreateEvent, command: String, args: String): Unit = {
-		val arguments = args.split(" ")
+	override def apply(client: ActorRef, e: MessageCreateEvent, command: String, args: ArgParser.Argument): Unit = {
+		val arguments = args.argv
 		val response = arguments.length match {
 			case 0 => Some("No car type given.")
 			case 1 => Some("No ranges given.")
 			case _ =>
-				val carType = arguments(0)
+				val carType = arguments.head
 				val carTypeExistsFuture = carExists(carType)
 				val rangesStr = arguments.drop(1)
 				val rangesOp = rangesStr.map(rangeUtils.parseRange)

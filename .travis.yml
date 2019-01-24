@@ -1,0 +1,6 @@
+dist: xenial
+language: scala
+scala:
+  - 2.12.8
+script:
+  - sbt assembly

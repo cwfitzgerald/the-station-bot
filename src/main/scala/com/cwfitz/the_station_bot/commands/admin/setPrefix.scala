@@ -2,12 +2,13 @@ package com.cwfitz.the_station_bot.commands.admin
 
 import akka.actor.ActorRef
 import com.cwfitz.the_station_bot.D4JImplicits._
-import com.cwfitz.the_station_bot.{Client, Command}
+import com.cwfitz.the_station_bot.{ArgParser, Client, Command}
 import discord4j.core.event.domain.message.MessageCreateEvent
 
 
 object setPrefix extends Command {
-	override def apply(client: ActorRef, e: MessageCreateEvent, command: String, args: String): Unit = {
+	override def apply(client: ActorRef, e: MessageCreateEvent, command: String, argPack: ArgParser.Argument): Unit = {
+		val args = argPack.fullText
 		val guildID = e.getGuildId.get
 		val channel = e.getMessage.getChannel.toScala
 		val words = args.split(" ").filter(_.nonEmpty)

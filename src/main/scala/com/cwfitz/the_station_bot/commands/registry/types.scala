@@ -1,7 +1,7 @@
 package com.cwfitz.the_station_bot.commands.registry
 
 import akka.actor.ActorRef
-import com.cwfitz.the_station_bot.Command
+import com.cwfitz.the_station_bot.{ArgParser, Command}
 import com.cwfitz.the_station_bot.database.DBWrapper
 import com.cwfitz.the_station_bot.D4JImplicits._
 import com.cwfitz.the_station_bot.database.PostgresProfile.api._
@@ -50,10 +50,14 @@ object types extends Command{
 		}
 	}
 
+	private def SQLRemoveTypeFunc(carType: Rep[String]) = {
+		DBWrapper.carTypes
+			.filter(_.carType === carType)
+	}
+	private val SQLRemoveType = Compiled(SQLRemoveTypeFunc _)
+
 	private def removeType(channel: Mono[MessageChannel], carType: String): Unit = {
-		val deleteQuery = DBWrapper.carTypes
-    		.filter(_.carType === carType)
-    		.delete
+		val deleteQuery = SQLRemoveType(carType).delete
 		DBWrapper.database.run(deleteQuery).onComplete{ t =>
 			val response = t.toEither match {
 				case Right(rowsDeleted) =>
@@ -68,14 +72,14 @@ object types extends Command{
 		}
 	}
 
-	override def apply(client: ActorRef, e: MessageCreateEvent, command: String, args: String): Unit = {
-		val argArray = args.split(" ").filter(_.nonEmpty)
+	override def apply(client: ActorRef, e: MessageCreateEvent, command: String, args: ArgParser.Argument): Unit = {
+		val argArray = args.argv
 		val channel = e.getMessage.getChannel.toScala
 		if(command == "remtype" && argArray.nonEmpty) {
-			removeType(channel, argArray(0))
+			removeType(channel, argArray.head)
 		}
 		else if (command == "addtype" && argArray.length >= 6) {
-			addType(channel, argArray(0), argArray(1), argArray(2), argArray(3), argArray(4), argArray(5))
+			addType(channel, argArray.head, argArray(1), argArray(2), argArray(3), argArray(4), argArray(5))
 		}
 		else {
 			channel.flatMap {

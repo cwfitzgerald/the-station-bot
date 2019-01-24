@@ -2,7 +2,7 @@ package com.cwfitz.the_station_bot.commands
 
 import akka.actor.ActorRef
 import com.cwfitz.the_station_bot.D4JImplicits._
-import com.cwfitz.the_station_bot.{Command, EmojiFilter, Time}
+import com.cwfitz.the_station_bot.{ArgParser, Command, EmojiFilter, Time}
 import discord4j.core.event.domain.message.MessageCreateEvent
 import discord4j.core.spec.EmbedCreateSpec
 import org.slf4j.LoggerFactory
@@ -115,7 +115,7 @@ object help extends Command {
 		}.subscribe()
 	}
 
-	override def apply(c: ActorRef, event: MessageCreateEvent, command: String, args: String): Unit = {
-		help(event, args)
+	override def apply(c: ActorRef, event: MessageCreateEvent, command: String, args: ArgParser.Argument): Unit = {
+		help(event, args.fullText)
 	}
 }
