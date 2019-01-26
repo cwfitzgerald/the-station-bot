@@ -39,6 +39,7 @@ object delays extends Command {
 			"(Q) trains aren't running because someone pissed in every single car.",
 			"(Q) trains are running with delays after a stubborn N train refused to move past Herald Square.",
 			"(N), (Q), (R), and (W) are running with delays in all 4 directions.",
+			"(T) trains are hiding in the Twilight Zone due to signal problems. We expect them to be moving in a few decades.",
 			"(Z) trains are not running today. But did they ever really run?"
 		)
 
