@@ -23,6 +23,6 @@ object ArgParser {
 				Seq(input)
 		}}
 		logger.debug(f"Args parsed in ${time / 100000.0}%.1fms")
-		Argument(input, array, array.length)
+		Argument(input.trim, array, array.length)
 	}
 }
