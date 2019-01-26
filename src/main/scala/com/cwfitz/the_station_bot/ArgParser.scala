@@ -17,7 +17,7 @@ object ArgParser {
 	def apply(input: String): Argument = {
 		val (array, time) = Time { parse(input, args(_), verboseFailures = true) match {
 			case Parsed.Success(value, _) =>
-				value.filter(_.nonEmpty)
+				value.filter(_.nonEmpty).map(_.trim)
 			case Parsed.Failure(label, index, _) =>
 				logger.warn(s"Arg splitting failed. Expected $label at index $index.")
 				Seq(input)
