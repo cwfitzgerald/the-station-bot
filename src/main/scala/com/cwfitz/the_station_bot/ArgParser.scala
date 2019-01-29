@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory
 
 object ArgParser {
 	private val logger = LoggerFactory.getLogger(getClass)
+
 	final case class Argument(fullText: String, argv: Seq[String], argc: Int)
 
 	private def str[_: P] = P( "\"" ~ ( P("\\\"".!).map(_ => "\"") | (!"\"" ~ AnyChar).! ).rep ~ "\"" )
