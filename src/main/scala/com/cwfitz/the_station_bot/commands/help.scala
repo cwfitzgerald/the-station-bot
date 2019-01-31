@@ -11,7 +11,7 @@ object help extends Command {
 	val logger = LoggerFactory.getLogger(getClass)
 
 	private def helpMessage(spec: EmbedCreateSpec): Unit = spec
-		.setAuthor("Andrew Cuomo", null, "https://cwfitz.com/s/_qaqGg.jpg")
+		.setAuthor("Andrew Cuomo", null, "https://i.imgur.com/L0pXqwy.jpg")
 		.setTitle("Help")
 		.setDescription("Help page for The Station's Bot.")
 		.addField("!help <module>", "View help on a specific command. Modules: `help`, `speed`, `emoji`, `trainspeak`.", false)
@@ -26,7 +26,7 @@ object help extends Command {
 		.addField("!ll", "ll", false)
 
 	private def speedHelpMessage(spec: EmbedCreateSpec): Unit = spec
-		.setAuthor("Andrew Cuomo", null, "https://cwfitz.com/s/_qaqGg.jpg")
+		.setAuthor("Andrew Cuomo", null, "https://i.imgur.com/L0pXqwy.jpg")
 		.setTitle("!speed")
 		.setDescription(
 			"""Help for the speed command.
@@ -41,14 +41,14 @@ object help extends Command {
 		.addField("to", "The time in the video where the last car of the train being measured crosses the measuring point. Accepts hours, minutes, and seconds  (`1 hour 32 minutes 28.32 seconds`).", false)
 
 	private def lMessage(spec: EmbedCreateSpec): Unit = spec
-		.setAuthor("Andrew Cuomo", null, "https://cwfitz.com/s/_qaqGg.jpg")
+		.setAuthor("Andrew Cuomo", null, "https://i.imgur.com/L0pXqwy.jpg")
 		.setTitle("!L")
 		.setDescription(
 			"L"
 		)
 
 	private def delaysMessage(spec: EmbedCreateSpec): Unit = spec
-		.setAuthor("Andrew Cuomo", null, "https://cwfitz.com/s/_qaqGg.jpg")
+		.setAuthor("Andrew Cuomo", null, "https://i.imgur.com/L0pXqwy.jpg")
 		.setTitle("!delays <count>")
 		.setDescription(
 			"""Show the current delays. You can set the amount of delays by passing in a number.
@@ -61,7 +61,7 @@ object help extends Command {
 		.addField("count", "The amount of delays to show. Max 10.", false)
 
 	private def emojiSpeak(spec: EmbedCreateSpec): Unit = {
-		spec.setAuthor("Andrew Cuomo", null, "https://cwfitz.com/s/_qaqGg.jpg")
+		spec.setAuthor("Andrew Cuomo", null, "https://i.imgur.com/L0pXqwy.jpg")
 			.setTitle("!emoji <msg>")
 			.setDescription(
 				"""Filters the input message through an emoji filter.
@@ -78,7 +78,7 @@ object help extends Command {
 	}
 
 	private def trainSpeakMessage(spec: EmbedCreateSpec): Unit = {
-		spec.setAuthor("Andrew Cuomo", null, "https://cwfitz.com/s/_qaqGg.jpg")
+		spec.setAuthor("Andrew Cuomo", null, "https://i.imgur.com/L0pXqwy.jpg")
 			.setTitle("!trainspeak <msg>")
 			.setDescription(
 				"""Filters the input message through a trainspeak filter.
