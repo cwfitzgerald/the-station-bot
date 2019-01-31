@@ -45,7 +45,7 @@ object lookup extends Command{
 				val commentText = comments.map(_.mkString("\n") + "\u200B").getOrElse("\u200B")
 
 				def singleCarEmbed(embed: EmbedCreateSpec): Unit = embed
-					.setAuthor("Andrew Cuomo", null, "https://cwfitz.com/s/_qaqGg.jpg")
+					.setAuthor("Andrew Cuomo", null, "https://i.imgur.com/L0pXqwy.jpg")
 					.setTitle(s"Car #$carNumber")
 					.addField("Type", carType, true)
 					.addField("Manufacturer", manufacturer, true)
@@ -174,7 +174,7 @@ object lookup extends Command{
 					.mkString("\n")
 
 				def multiCarEmbed(embed: EmbedCreateSpec): Unit = embed
-					.setAuthor("Andrew Cuomo", null, "https://cwfitz.com/s/_qaqGg.jpg")
+					.setAuthor("Andrew Cuomo", null, "https://i.imgur.com/L0pXqwy.jpg")
 					.setTitle("Multiple Cars")
 					.addField("Info", carText, false)
 
@@ -237,7 +237,7 @@ object lookup extends Command{
 				val commentText = comments.map(_.mkString("\n") + "\u200B").getOrElse("\u200B")
 
 				def carTypeEmbed(embed: EmbedCreateSpec): Unit = embed
-					.setAuthor("Andrew Cuomo", null, "https://cwfitz.com/s/_qaqGg.jpg")
+					.setAuthor("Andrew Cuomo", null, "https://i.imgur.com/L0pXqwy.jpg")
 					.setTitle(carType)
 					.addField("Numbers:", numberRanges.mkString("\n"), true)
     				.addField("Count:", count.toString, true)

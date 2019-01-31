@@ -40,7 +40,7 @@ object status extends Command {
 
 		def createEmbed(embed: EmbedCreateSpec): Unit = {
 			embed
-				.setAuthor("Andrew Cuomo", null, "https://cwfitz.com/s/_qaqGg.jpg")
+				.setAuthor("Andrew Cuomo", null, "https://i.imgur.com/L0pXqwy.jpg")
 				.setTitle("Current Status")
 				.addField("Author", "Sirflankalot#3671", true)
     			.addField("Built For", "The Station\nhttps://discord.gg/tzP6UA3", true)
