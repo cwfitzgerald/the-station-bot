@@ -47,7 +47,7 @@ object DBWrapper {
 		val sshSession = usingSSH.map(_ => {
 			val j = new JSch()
 			j.addIdentity("~/.ssh/id_rsa")
-			val sess = j.getSession("cwfitz.com")
+			val sess = j.getSession(sys.env("CWF_HOST")
 			sess.setConfig("StrictHostKeyChecking", "no")
 			sess.connect()
 			sess.setPortForwardingL(5432, "localhost", 5432)
