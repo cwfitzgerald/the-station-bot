@@ -16,6 +16,7 @@ object delays extends Command {
 			"The (2) and (5) sisters MAY feel like fucking up your afternoon by going express between 3rd ave and E 180st in The Bronx due to the never-ending track construction.",
 			"(3) trains are running with delays after the doors of the rear five cars got opened at 145 St.",
 			"(4), (5), and (6) trains are running with delays after an earlier incident involving a void between the train and the platform at 14 St-Union Square.",
+			"Southbound (4) and (5) trains are delayed while the NYPD responds to someone who is refusing to stop dangling their legs over the platform at 14 St-Union Sq.",
 			"(5) trains are running via the (2) after someone's shoe got stuck in the switch at 149 St-Grand Concourse.",
 			"(5) trains are not running between Bowling Green and Flatbush Av after protests from (4) riders.",
 			"The (2) and (3) OR (4) and (5) are delayed because someone requires medical assistance at Fulton St and/or Atlantic Ave.",
