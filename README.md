@@ -10,7 +10,7 @@ sbt assembly
 
 ## Env vars
 
-The bot requires a connection to a postgres database and a discord bot login tokin. They should be set in the appropriate env vars.
+The bot requires a connection to a postgres database and a discord bot login tokin. The database must have schema that are discribed [here](https://github.com/cwfitzgerald/the-station-bot/blob/master/src/main/scala/com/cwfitz/the_station_bot/database/DBWrapper.scala#L7). They should be set in the appropriate env vars.
 
 `CWF_USE_SSH` equal to `1` if you want the bot to connect using ssh.  
 `CWF_HOST` is the host to connect to with ssh.  
