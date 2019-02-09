@@ -1,5 +1,7 @@
 # The Station's Discord Bot
 
+[![Build Status](https://ci.bvereborn.com/buildStatus/icon?job=the-station-bot)](https://ci.bvereborn.com/job/the-station-bot)
+
 A bot for a discord called the-station. https://discord.gg/tzP6UA3
 
 ## Build
