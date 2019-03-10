@@ -34,6 +34,8 @@ object delays extends Command {
 			"(F) trains are currently hiding in the lower level of Bergen St.",
 			"(G) trains will be stopping wherever they feel like along the platform for the forseeable future due to indecisive Train Operators. We apologize for the inconvenience, but at least you'll get some daily cardio!",
 			"(L) trains are running every 20 minutes through only one of the tunnels all day every day until either Cuomo leaves office or the tunnel collapses.",
+			"(L) trains are not running between Union Square and Bedford Avenue because we are nostalgic about the (L) train shutdown.",
+			"Jamaica-bound (J) and (Z) trains are delayed while our train crew takes a restroom break at Crescent St. All trains are now Flushing-bound.",
 			"(J) trains are not running due to Bombardier being Bombardier.",
 			"(M) trains are running between Delancey St-Essex St and Metropolitan Av-Middle Village due to Chris Christie being stuck in the Chrystie Street Connection",
 			"(M) trains didn't wake up today.",
@@ -52,11 +54,14 @@ object delays extends Command {
 			"Wow, there are no delays!"
 		}
 		else {
+			val neg = count < 0
+			val actualCount = if (neg) -count else count
 			val hour = ZonedDateTime.now(ZoneId.of("America/New_York")).getHour
-			val messages = Random.shuffle(delayMessages).take(count).map(s => s" - $s").mkString("\n")
+			val messages = Random.shuffle(delayMessages).take(actualCount).map(s => s" - $s").mkString("\n")
 			val filtered = messages.replace("<morn/eve>", if (hour < 12) "morning" else "evening")
 			val emoji = EmojiFilter.trainspeak(filtered)
-			s"The current delays:\n$emoji"
+			val reversed = if (neg) emoji.reverse else emoji
+			s"The current delays:\n$reversed"
 		}
 		event.getMessage.getChannel.toScala.flatMap {
 			chan => chan.createMessage(msg).toScala
