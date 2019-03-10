@@ -59,7 +59,7 @@ object delays extends Command {
 			val hour = ZonedDateTime.now(ZoneId.of("America/New_York")).getHour
 			val messages = Random.shuffle(delayMessages).take(actualCount).map(s => s" - $s").mkString("\n")
 			val filtered = messages.replace("<morn/eve>", if (hour < 12) "morning" else "evening")
-			val reversed = if (neg) filtered.replace(")", "(").replace("(", ")") else filtered
+			val reversed = if (neg) filtered.replace(")", "(").replace("(", ")").reverse else filtered
 			val emoji = EmojiFilter.trainspeak(reversed)
 			s"The current delays:\n$emoji"
 		}
